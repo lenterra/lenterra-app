@@ -1,328 +1,347 @@
-import { Image, StyleSheet, View, useColorScheme } from "react-native";
-
-import { ParallaxScrollView } from "@/components/ParallaxScrollView";
-import { ThemedButton } from "@/components/ThemedButton";
-import { ThemedText } from "@/components/ThemedText";
-import { ThemedView } from "@/components/ThemedView";
-import { chain, client } from "@/constants/thirdweb";
-import { useEffect, useState } from "react";
-import { createAuth } from "thirdweb/auth";
-import { baseSepolia, ethereum } from "thirdweb/chains";
+import React from 'react';
 import {
-	ConnectButton,
-	ConnectEmbed,
-	lightTheme,
-	useActiveAccount,
-	useActiveWallet,
-	useConnect,
-	useDisconnect,
-} from "thirdweb/react";
-import { shortenAddress } from "thirdweb/utils";
-import { createWallet } from "thirdweb/wallets";
-import {
-	getUserEmail,
-	hasStoredPasskey,
-	inAppWallet,
-} from "thirdweb/wallets/in-app";
+  View,
+  Text,
+  Image,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  SafeAreaView,
+  Dimensions,
+  ViewStyle,
+  TextStyle,
+  ImageStyle,
+} from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 
-const wallets = [
-	inAppWallet({
-		auth: {
-			options: [
-				"google",
-				"facebook",
-				"discord",
-				"telegram",
-				"email",
-				"phone",
-				"passkey",
-			],
-			passkeyDomain: "thirdweb.com",
-		},
-		smartAccount: {
-			chain: baseSepolia,
-			sponsorGas: true,
-		},
-	}),
-	createWallet("io.metamask"),
-	createWallet("com.coinbase.wallet", {
-		appMetadata: {
-			name: "Thirdweb RN Demo",
-		},
-		mobileConfig: {
-			callbackURL: "com.thirdweb.demo://",
-		},
-		walletConfig: {
-			options: "smartWalletOnly",
-		},
-	}),
-	createWallet("me.rainbow"),
-	createWallet("com.trustwallet.app"),
-	createWallet("io.zerion.wallet"),
-];
+const windowWidth = Dimensions.get('window').width;
 
-const thirdwebAuth = createAuth({
-	domain: "localhost:3000",
-	client,
-});
+const HomeScreen: React.FC = () => {
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView contentContainerStyle={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.greeting}>Hi, Firsa</Text>
+          <Image source={require('@/assets/images/lenterra-logo.png')} style={styles.logo} />
+        </View>
 
-// fake login state, this should be returned from the backend
-let isLoggedIn = false;
+        <Text style={styles.sectionTitle}>Exclusive Offers</Text>
 
-export default function HomeScreen() {
-	const account = useActiveAccount();
-	const theme = useColorScheme();
-	return (
-		<ParallaxScrollView
-			headerBackgroundColor={{ light: "#A1CEDC", dark: "#1D3D47" }}
-			headerImage={
-				<Image
-					source={require("@/assets/images/title.png")}
-					style={styles.reactLogo}
-				/>
-			}
-		>
-			<ThemedView style={styles.titleContainer}>
-				<ThemedText type="title">Connecting Wallets</ThemedText>
-			</ThemedView>
-			<View style={{ gap: 2 }}>
-				<ThemedText type="subtitle">{`<ConnectButton />`}</ThemedText>
-				<ThemedText type="subtext">
-					Configurable button + modal, handles both connection and connected
-					state. Example below has Smart Accounts + sponsored transactions
-					enabled.
-				</ThemedText>
-			</View>
-			<ConnectButton
-				client={client}
-				theme={theme || "dark"}
-				wallets={wallets}
-				chain={baseSepolia}
-			/>
-			<View style={{ gap: 2 }}>
-				<ThemedText type="subtitle">{`Themed <ConnectButton />`}</ThemedText>
-				<ThemedText type="subtext">
-					Styled the Connect Button to match your app.
-				</ThemedText>
-			</View>
-			<ConnectButton
-				client={client}
-				theme={lightTheme({
-					colors: {
-						primaryButtonBg: "#1e8449",
-						modalBg: "#1e8449",
-						borderColor: "#196f3d",
-						accentButtonBg: "#196f3d",
-						primaryText: "#ffffff",
-						secondaryIconColor: "#a7b8b9",
-						secondaryText: "#a7b8b9",
-						secondaryButtonBg: "#196f3d",
-					},
-				})}
-				wallets={[
-					createWallet("io.metamask"),
-					createWallet("com.coinbase.wallet"),
-					createWallet("me.rainbow"),
-					createWallet("com.trustwallet.app"),
-					createWallet("io.zerion.wallet"),
-					createWallet("xyz.argent"),
-					createWallet("com.okex.wallet"),
-					createWallet("com.zengo"),
-				]}
-				connectButton={{
-					label: "Sign in to ✨ MyApp",
-				}}
-				connectModal={{
-					title: "✨ MyApp Login",
-				}}
-			/>
-			<View style={{ height: 16 }} />
-			<View style={{ gap: 2 }}>
-				<ThemedText type="subtitle">{`<ConnectEmbed />`}</ThemedText>
-				<ThemedText type="subtext">
-					Embeddable connection component in any screen. Example below is
-					configured with a specific list of EOAs + SIWE.
-				</ThemedText>
-			</View>
-			<ConnectEmbed
-				client={client}
-				theme={theme || "dark"}
-				chain={ethereum}
-				wallets={wallets}
-				auth={{
-					async doLogin(params) {
-						// fake delay
-						await new Promise((resolve) => setTimeout(resolve, 2000));
-						const verifiedPayload = await thirdwebAuth.verifyPayload(params);
-						isLoggedIn = verifiedPayload.valid;
-					},
-					async doLogout() {
-						isLoggedIn = false;
-					},
-					async getLoginPayload(params) {
-						return thirdwebAuth.generatePayload(params);
-					},
-					async isLoggedIn(address) {
-						return isLoggedIn;
-					},
-				}}
-			/>
-			{account && (
-				<ThemedText type="subtext">
-					ConnectEmbed does not render when connected, use the `onConnect` prop
-					to navigate to a new screen instead.
-				</ThemedText>
-			)}
-			<View style={{ height: 16 }} />
-			<View style={{ gap: 2 }}>
-				<ThemedText type="subtitle">{`useConnect()`}</ThemedText>
-				<ThemedText type="subtext">
-					Hooks to build your own UI. Example below connects to a smart Google
-					account or metamask EOA.
-				</ThemedText>
-			</View>
-			<CustomConnectUI />
-		</ParallaxScrollView>
-	);
-}
+        <LinearGradient
+          colors={['#DB6B79', '#A17279']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.offerCard}
+        >
+          <View style={styles.bookContainer}>
+            <Image
+              source={require('@/assets/images/book-1.png')}
+              style={styles.offerImage}
+              resizeMode="contain"
+            />
+          </View>
 
-const CustomConnectUI = () => {
-	const wallet = useActiveWallet();
-	const account = useActiveAccount();
-	const [email, setEmail] = useState<string | undefined>();
-	const { disconnect } = useDisconnect();
-	useEffect(() => {
-		if (wallet && wallet.id === "inApp") {
-			getUserEmail({ client }).then(setEmail);
-		}
-	}, [wallet]);
+          <View style={styles.offerContentWrapper}>
+            <View style={styles.offerTopRow}>
+              <View style={styles.offerBadge}>
+                <Text style={styles.offerBadgeText}>Only For Today!</Text>
+              </View>
+              <View style={styles.discountContainer}>
+                <Image
+                  source={require('@/assets/icons/discount-shape.png')}
+                  style={styles.discountShape}
+                />
+                <Text style={styles.discountText}>50% OFF</Text>
+              </View>
+            </View>
 
-	return wallet && account ? (
-		<View>
-			<ThemedText>Connected as {shortenAddress(account.address)}</ThemedText>
-			{email && <ThemedText type="subtext">{email}</ThemedText>}
-			<View style={{ height: 16 }} />
-			<ThemedButton onPress={() => disconnect(wallet)} title="Disconnect" />
-		</View>
-	) : (
-		<>
-			<ConnectWithGoogle />
-			<ConnectWithMetaMask />
-			<ConnectWithPasskey />
-		</>
-	);
-};
+            <View style={styles.offerList}>
+              <Text style={styles.offerListItem}>• Advanced STEM</Text>
+              <Text style={styles.offerListItem}>• Coding (Python, Java, Etc)</Text>
+              <Text style={styles.offerListItem}>• Intro To Business</Text>
+            </View>
 
-const ConnectWithGoogle = () => {
-	const { connect, isConnecting } = useConnect();
-	return (
-		<ThemedButton
-			title="Connect with Google"
-			loading={isConnecting}
-			loadingTitle="Connecting..."
-			onPress={() => {
-				connect(async () => {
-					const w = inAppWallet({
-						smartAccount: {
-							chain,
-							sponsorGas: true,
-						},
-					});
-					await w.connect({
-						client,
-						strategy: "google",
-					});
-					return w;
-				});
-			}}
-		/>
-	);
-};
+            <View style={styles.claimButtonContainer}>
+              <TouchableOpacity style={styles.claimButton}>
+                <Text style={styles.claimButtonText}>Claim</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </LinearGradient>
 
-const ConnectWithMetaMask = () => {
-	const { connect, isConnecting } = useConnect();
-	return (
-		<ThemedButton
-			title="Connect with MetaMask"
-			variant="secondary"
-			loading={isConnecting}
-			loadingTitle="Connecting..."
-			onPress={() => {
-				connect(async () => {
-					const w = createWallet("io.metamask");
-					await w.connect({
-						client,
-					});
-					return w;
-				});
-			}}
-		/>
-	);
-};
+        <View style={styles.paginationDots}>
+          <View style={[styles.dot, styles.activeDot]} />
+          <View style={styles.dot} />
+          <View style={styles.dot} />
+        </View>
 
-const ConnectWithPasskey = () => {
-	const { connect } = useConnect();
-	return (
-		<ThemedButton
-			title="Login with Passkey"
-			onPress={() => {
-				connect(async () => {
-					const hasPasskey = await hasStoredPasskey(client);
-					const w = inAppWallet({
-						auth: {
-							options: ["passkey"],
-							passkeyDomain: "thirdweb.com",
-						},
-					});
-					await w.connect({
-						client,
-						strategy: "passkey",
-						type: hasPasskey ? "sign-in" : "sign-up",
-					});
-					return w;
-				});
-			}}
-		/>
-	);
+        <View style={styles.recommendedHeader}>
+          <Text style={styles.sectionTitle}>Recommended For You</Text>
+          <TouchableOpacity>
+            <Text style={styles.moreText}>More</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.gameCardContainer}>
+          {[{
+            title: 'Congklak',
+            image: require('@/assets/images/congklak-1.png'),
+            tags: [
+              { text: 'Basic Computation', style: styles.pinkTagText, background: styles.pinkTag },
+              { text: 'Algorithms', style: styles.blueTagText, background: styles.blueTag },
+            ],
+          }, {
+            title: 'Benteng',
+            image: require('@/assets/images/benteng-1.png'),
+            tags: [
+              { text: 'Basic Computation', style: styles.pinkTagText, background: styles.pinkTag },
+              { text: 'Cyber Security', style: styles.yellowTagText, background: styles.yellowTag },
+            ],
+          }, {
+            title: 'Engklek',
+            image: require('@/assets/images/engklek-1.png'),
+            tags: [
+              { text: 'Algorithms', style: styles.blueTagText, background: styles.blueTag },
+            ],
+          }, {
+            title: 'Gaple',
+            image: require('@/assets/images/gaple-1.png'),
+            tags: [
+              { text: 'Basic Computation', style: styles.pinkTagText, background: styles.pinkTag },
+              { text: 'Algorithms', style: styles.blueTagText, background: styles.blueTag },
+            ],
+          }].map((game, index) => (
+            <View key={index} style={styles.gameCard}>
+              <View style={styles.gameCardContent}>
+                <Image source={game.image} style={styles.gameImage} />
+                <View style={styles.gameInfo}>
+                  <Text style={styles.gameTitle}>{game.title}</Text>
+                  <View style={styles.tagContainer}>
+                    {game.tags.map((tag, i) => (
+                      <View key={i} style={[styles.tag, tag.background]}>
+                        <Text style={tag.style}>{tag.text}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+                <TouchableOpacity style={styles.playButton}>
+                  <Text style={styles.playButtonText}>Play!</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ))}
+        </View>
+      </ScrollView>
+    </SafeAreaView>
+  );
 };
 
 const styles = StyleSheet.create({
-	titleContainer: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 8,
-	},
-	stepContainer: {
-		gap: 8,
-		marginBottom: 8,
-	},
-	reactLogo: {
-		height: "100%",
-		width: "100%",
-		bottom: 0,
-		left: 0,
-		position: "absolute",
-	},
-	rowContainer: {
-		flexDirection: "row",
-		flexWrap: "wrap",
-		gap: 24,
-		justifyContent: "space-evenly",
-	},
-	tableContainer: {
-		width: "100%",
-	},
-	tableRow: {
-		flexDirection: "row",
-		justifyContent: "space-between",
-		marginBottom: 4,
-	},
-	leftColumn: {
-		flex: 1,
-		textAlign: "left",
-	},
-	rightColumn: {
-		flex: 1,
-		textAlign: "right",
-	},
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#fff',
+  } as ViewStyle,
+  container: {
+    padding: 16,
+  } as ViewStyle,
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+    marginTop: 10,
+  } as ViewStyle,
+  logo: {
+    width: 50,
+    height: 35,
+  } as ImageStyle,
+  greeting: {
+    fontSize: 24,
+    fontWeight: 'bold',
+  } as TextStyle,
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 12,
+  } as TextStyle,
+  offerCard: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    marginBottom: 16,
+    flexDirection: 'row',
+    height: 180,
+  } as ViewStyle,
+  bookContainer: {
+    width: '40%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingLeft: 8,
+  } as ViewStyle,
+  offerImage: {
+    width: '100%',
+    height: 160,
+    resizeMode: 'contain',
+  } as ImageStyle,
+  offerContentWrapper: {
+    width: '60%',
+    padding: 16,
+    justifyContent: 'space-between',
+  } as ViewStyle,
+  offerTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  } as ViewStyle,
+  offerBadge: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    paddingVertical: 6,
+    paddingHorizontal: 16,
+  } as ViewStyle,
+  offerBadgeText: {
+    fontWeight: 'bold',
+    color: '#000',
+    fontSize: 12,
+  } as TextStyle,
+  discountContainer: {
+    alignItems: 'center',
+  } as ViewStyle,
+  discountShape: {
+    width: 24,
+    height: 24,
+    marginBottom: 4,
+  } as ImageStyle,
+  discountText: {
+    color: '#FFD700',
+    fontWeight: 'bold',
+    fontSize: 10,
+  } as TextStyle,
+  offerList: {
+    marginTop: 8,
+  } as ViewStyle,
+  offerListItem: {
+    color: '#FFF',
+    fontSize: 12,
+    marginBottom: 8,
+    fontWeight: '500',
+  } as TextStyle,
+  claimButtonContainer: {
+    alignItems: 'flex-end',
+    marginTop: 'auto',
+  } as ViewStyle,
+  claimButton: {
+    backgroundColor: '#C6444F',
+    borderRadius: 24,
+    paddingVertical: 6,
+    paddingHorizontal: 24,
+  } as ViewStyle,
+  claimButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+  } as TextStyle,
+  paginationDots: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginVertical: 16,
+  } as ViewStyle,
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#ddd',
+    marginHorizontal: 4,
+  } as ViewStyle,
+  activeDot: {
+    backgroundColor: '#FFC107',
+  } as ViewStyle,
+  recommendedHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  } as ViewStyle,
+  moreText: {
+    color: '#888',
+    fontSize: 16,
+  } as TextStyle,
+  gameCardContainer: {
+    gap: 12,
+  } as ViewStyle,
+  gameCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 12,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  } as ViewStyle,
+  gameCardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  } as ViewStyle,
+  gameImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 12,
+  } as ImageStyle,
+  gameInfo: {
+    marginLeft: 12,
+    flex: 1,
+  } as ViewStyle,
+  gameTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 6,
+  } as TextStyle,
+  tagContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  } as ViewStyle,
+  tag: {
+    borderRadius: 16,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    marginRight: 6,
+  } as ViewStyle,
+  pinkTag: {
+    backgroundColor: '#FFCECE',
+  } as ViewStyle,
+  pinkTagText: {
+    fontSize: 10,
+    color: '#FF5757',
+  } as TextStyle,
+  blueTag: {
+    backgroundColor: '#D1E5FF',
+  } as ViewStyle,
+  blueTagText: {
+    fontSize: 10,
+    color: '#0066FF',
+  } as TextStyle,
+  yellowTag: {
+    backgroundColor: '#FFF3D1',
+  } as ViewStyle,
+  yellowTagText: {
+    fontSize: 10,
+    color: '#FFB800',
+  } as TextStyle,
+  playButton: {
+    backgroundColor: '#ED5B3A',
+    borderRadius: 20,
+    paddingVertical: 6,
+    paddingHorizontal: 16,
+  } as ViewStyle,
+  playButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 12,
+  } as TextStyle,
 });
+
+export default HomeScreen;

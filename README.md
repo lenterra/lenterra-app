@@ -1,89 +1,89 @@
-![Banner](https://github.com/thirdweb-example/thirdweb-auth-express/assets/17715009/06383e68-9c65-4265-8505-e88e573443f9)
-# thirdweb expo starter
+# Lenterra
 
-Starter template to build an onchain react native app with [thirdweb](https://thirdweb.com/) and [expo](https://expo.dev/).
+![Lenterra Logo](assets/images/lenterra-logo.png)
 
-### Features
+## 🌟 About Lenterra
 
-- in-app wallets using phone number, email or social logins to create a wallet for the user
-- smart accounts to sponsor gas
-- connecting to external wallets like MetaMask via WalletConnect
-- autoconnecting to the last connected wallet on launch
-- reading contract state and events
-- writing to the blockchain
+Lenterra is an innovative digital learning platform that integrates traditional Indonesian games with STEM education and digital skills through gamification. Designed to improve education access and quality for middle and high school students in Indonesia, Lenterra addresses educational disparities between rural and urban areas.
 
-## Installation
+## 🎯 Our Mission
 
-Install the template using [thirdweb create](https://portal.thirdweb.com/cli/create)
+To reduce school dropout rates and enhance learning motivation by creating an engaging, culturally relevant educational experience that bridges traditional knowledge with modern skills development.
 
-```bash
-  npx thirdweb create app --react-native
-```
+## ✨ Key Features
 
-## Get started
+### 🎮 Culture-Based Gamification
+- Digital adaptations of traditional Indonesian games like Congklak (for algorithm learning), Benteng (for cybersecurity concepts), and Engklek
+- Integration of local cultural elements with STEM education
 
-1. Install dependencies
+### 🤖 AI-Powered Personalization
+- Smart learning path adaptation based on individual performance
+- Automatic difficulty adjustment for optimal learning challenges
+- Personalized recommendations for games and courses
 
-```bash
-yarn install
-```
+### 🏆 Rewards System with Real Benefits
+- Points earned can be exchanged for training, certification, or real-world experiences
+- Leaderboards to encourage healthy competition
+- Digital achievements and badges
 
-2. Get your thirdweb client id
+### 📊 Progress Tracking
+- Comprehensive analytics for students to monitor their learning journey
+- Detailed insights for teachers to adapt teaching methods in real-time
 
-Rename the `.env.example` file to `.env` and paste in your thirdweb client id.
+## 🚀 Getting Started
 
-You can obtain a free client id from the [thirdweb dashboard](https://thirdweb.com/dashboard/settings).
+### Prerequisites
+- Android 7.0+ or iOS 12.0+
+- Stable internet connection
 
-3. Prebuild the ios and android directories
+### Installation
+1. Download Lenterra from Google Play Store or Apple App Store
+2. Create an account or sign in
+3. Complete your profile to receive personalized recommendations
+4. Start your learning journey with traditional games and STEM challenges
+
+## 🔍 Target Users
+
+- Middle and high school students, especially in areas with limited educational access
+- Teachers looking to enhance teaching methods through technology
+- Educational institutions seeking innovative approaches to reduce dropout rates
+- Industries and government bodies interested in supporting educational initiatives
 
 
-> [!IMPORTANT]  
-> The thirdweb SDK uses native modules, which means it cannot run on expo GO. You must build the ios and android apps to link the native modules.
+## 🛣️ Roadmap
 
-```bash
-npx expo prebuild
-```
+Lenterra is being developed through multiple phases:
+1. Initial Development & Testing
+2. Regional Expansion
+3. National Integration
+4. Feature Enhancement
 
-This will create the `ios` and `android` directories.
+## 🤝 Partnerships
 
-4. Start the app
+Lenterra seeks collaborations with:
+- Educational institutions
+- Government education departments
+- Tech companies through CSR initiatives
+- Local cultural organizations
 
-```bash
-yarn ios
-```
+## 📚 Addressing UN SDGs
 
-or
+Lenterra contributes to multiple Sustainable Development Goals:
+- SDG 4: Quality Education
+- SDG 10: Reduced Inequalities
+- And more through its snowball effect approach
 
-```bash
-yarn android
-```
+## 👨‍💻 Development Team
 
-To run this app, you'll need either:
+Lenterra is developed by Team NFZ:
+- Muhammad Faiz Atharrahman
+- Firsa Athaya Raissa
+- Nadya Saski Wardiman
 
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
+## 🔗 Links
 
-## Troubleshooting
+- [Figma Prototype](https://www.figma.com/proto/IF5fLisfuJOFcAedLDpUaG/NFZ?node-id=2-11&t=cTkwFtNInFNnLQNc-0&scaling=scale-down&content-scaling=fixed&page-id=0%3A1&starting-point-node-id=2%3A11)
 
-### OpenSSL Error on Xcode 16
+---
 
-If using xcode 16, you may encounter a OpenSSL error when trying to build the app. This is because xcode 16 requires a newer version of OpenSSL than the one specified in the current app.json.
-
-To fix this, change the version of OpenSSL specified in the `app.json` file to `3.3.2000`.
-
-- Open the `app.json` file
-- Find the `ios` > `extraPods` section
-- Set `"version": "3.3.2000"` for the `OpenSSL-Universal` pod
-- Save the file
-
-Then run `npx expo prebuild` to update the native modules with the new OpenSSL version and run the app again.
-
-## Additional Resources
-
-- [Documentation](https://portal.thirdweb.com/typescript/v5)
-- [Templates](https://thirdweb.com/templates)
-- [YouTube](https://www.youtube.com/c/thirdweb)
-
-## Support
-
-For help or feedback, please [visit our support site](https://thirdweb.com/support)
+© 2025 Lenterra. All rights reserved.

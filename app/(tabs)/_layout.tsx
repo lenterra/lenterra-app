@@ -16,36 +16,60 @@ export default function TabLayout() {
 			}}
 		>
 			<Tabs.Screen
+				name="board"
+				options={{
+					title: "Board",
+					tabBarIcon: ({ color, focused }) => (
+						<TabBarIcon
+							name={focused ? "stats-chart" : "stats-chart-outline"}
+							color={color}
+						/>
+					),
+				}}
+			/>	
+			<Tabs.Screen
+				name="games"
+				options={{
+					title: "Games",
+					tabBarIcon: ({ color, focused }) => (
+						<TabBarIcon
+							name={focused ? "star" : "star-outline"}
+							color={color}
+						/>
+					),
+				}}
+			/>
+			<Tabs.Screen
 				name="index"
 				options={{
-					title: "Connect",
+					title: "Home",
 					tabBarIcon: ({ color, focused }) => (
 						<TabBarIcon
-							name={focused ? "wallet" : "wallet-outline"}
+							name={focused ? "home" : "home-outline"}
 							color={color}
 						/>
 					),
 				}}
 			/>
 			<Tabs.Screen
-				name="read"
+				name="courses"
 				options={{
-					title: "Read",
+					title: "Courses",
 					tabBarIcon: ({ color, focused }) => (
 						<TabBarIcon
-							name={focused ? "reader" : "reader-outline"}
+							name={focused ? "library" : "library-outline"}
 							color={color}
 						/>
 					),
 				}}
 			/>
 			<Tabs.Screen
-				name="write"
+				name="profile"
 				options={{
-					title: "Write",
+					title: "Profile",
 					tabBarIcon: ({ color, focused }) => (
 						<TabBarIcon
-							name={focused ? "code-slash" : "code-slash-outline"}
+							name={focused ? "person" : "person-outline"}
 							color={color}
 						/>
 					),
