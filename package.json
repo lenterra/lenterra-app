@@ -17,9 +17,11 @@
     "@coinbase/wallet-mobile-sdk": "^1.0.13",
     "@expo/vector-icons": "^14.0.0",
     "@heroiclabs/nakama-js": "^2.8.0",
+    "@lenterra/core": "file:../lenterra-api/packages/core",
     "@react-native-async-storage/async-storage": "1.23.1",
     "@react-native-community/netinfo": "11.3.1",
     "@react-navigation/native": "^6.0.2",
+    "@tanstack/react-query": "^5.101.4",
     "@thirdweb-dev/react-native-adapter": "^1.5.4",
     "@walletconnect/react-native-compat": "^2.17.5",
     "amazon-cognito-identity-js": "^6.3.12",
@@ -37,8 +39,10 @@
     "expo-status-bar": "~1.12.1",
     "expo-system-ui": "~3.0.4",
     "expo-web-browser": "~13.0.3",
+    "i18next": "^23.16.8",
     "react": "18.2.0",
     "react-dom": "18.2.0",
+    "react-i18next": "^15.7.4",
     "react-native": "0.74.5",
     "react-native-aes-gcm-crypto": "0.2.2",
     "react-native-chart-kit": "^6.12.0",
@@ -55,7 +59,9 @@
     "react-native-screens": "3.34.0",
     "react-native-svg": "15.2.0",
     "react-native-web": "0.19.12",
-    "thirdweb": "^5.93.4"
+    "thirdweb": "^5.93.4",
+    "zod": "^3.25.76",
+    "zustand": "^5.0.15"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
