@@ -1,347 +1,283 @@
-import React from 'react';
+/**
+ * Home.
+ *
+ * The demo greeted "Hi, Firsa" — a name in the source — above an "Exclusive
+ * Offers / 50% OFF / Claim" card with no handler, then a hardcoded array of
+ * four games with a "Play!" button that did nothing. Three of the four games
+ * did not exist.
+ *
+ * What replaces it is the one screen where the adaptive engine becomes visible:
+ * a recommendation, and a plain sentence saying *why* it was chosen. The reason
+ * is not decoration. A system that tells a student what to do next without
+ * saying why is asking to be trusted on nothing (P3), and it is the same claim
+ * the teacher dashboard has to be able to answer.
+ *
+ * There is no discount card. The product has no paid tier a student can buy,
+ * and a fake one on the first screen a child sees is not a placeholder, it is a
+ * dark pattern rehearsal.
+ */
+
+import { useCallback } from 'react';
+import { useRouter } from 'expo-router';
 import {
-  View,
-  Text,
-  Image,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  SafeAreaView,
-  Dimensions,
-  ViewStyle,
-  TextStyle,
-  ImageStyle,
+	Pressable,
+	RefreshControl,
+	SafeAreaView,
+	ScrollView,
+	StyleSheet,
+	Text,
+	View,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { useTranslation } from 'react-i18next';
 
-const windowWidth = Dimensions.get('window').width;
+import { activeAccountId } from '@/src/data/cache/storage';
+import {
+	useBootstrap,
+	useRecommendations,
+	type Recommendation,
+} from '@/src/data/queries/hooks';
+import { pendingCount } from '@/src/data/outbox/queue';
+import {
+	EmptyState,
+	ErrorState,
+	LoadingState,
+	OfflineNotice,
+} from '@/src/ui/components/ScreenState';
+import {
+	MIN_TOUCH_TARGET,
+	domainColors,
+	palette,
+	radius,
+	spacing,
+	typography,
+} from '@/src/ui/tokens';
 
-const HomeScreen: React.FC = () => {
-  return (
-    <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.greeting}>Hi, Firsa</Text>
-          <Image source={require('@/assets/images/lenterra-logo.png')} style={styles.logo} />
-        </View>
+/** `algo.iteration` → `algorithms`, so a node maps to its domain colour. */
+function domainOf(skillNodeId: string): keyof typeof domainColors {
+	if (skillNodeId.startsWith('comp.')) return 'computation';
+	if (skillNodeId.startsWith('sec.')) return 'security';
+	return 'algorithms';
+}
 
-        <Text style={styles.sectionTitle}>Exclusive Offers</Text>
+export default function HomeScreen() {
+	const { t } = useTranslation();
+	const router = useRouter();
+	const accountId = activeAccountId();
 
-        <LinearGradient
-          colors={['#DB6B79', '#A17279']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.offerCard}
-        >
-          <View style={styles.bookContainer}>
-            <Image
-              source={require('@/assets/images/book-1.png')}
-              style={styles.offerImage}
-              resizeMode="contain"
-            />
-          </View>
+	const bootstrap = useBootstrap(accountId);
+	const recommendations = useRecommendations(accountId);
+	const pending = accountId ? pendingCount(accountId) : 0;
 
-          <View style={styles.offerContentWrapper}>
-            <View style={styles.offerTopRow}>
-              <View style={styles.offerBadge}>
-                <Text style={styles.offerBadgeText}>Only For Today!</Text>
-              </View>
-              <View style={styles.discountContainer}>
-                <Image
-                  source={require('@/assets/icons/discount-shape.png')}
-                  style={styles.discountShape}
-                />
-                <Text style={styles.discountText}>50% OFF</Text>
-              </View>
-            </View>
+	const openMission = useCallback(
+		(missionId: string) => router.push(`/play/${missionId}`),
+		[router],
+	);
 
-            <View style={styles.offerList}>
-              <Text style={styles.offerListItem}>• Advanced STEM</Text>
-              <Text style={styles.offerListItem}>• Coding (Python, Java, Etc)</Text>
-              <Text style={styles.offerListItem}>• Intro To Business</Text>
-            </View>
+	const primary = recommendations.data?.primary ?? null;
+	const alternatives: Recommendation[] = recommendations.data?.alternatives ?? [];
+	const assignment = recommendations.data?.assignment ?? null;
+	const summary = bootstrap.data?.summary;
 
-            <View style={styles.claimButtonContainer}>
-              <TouchableOpacity style={styles.claimButton}>
-                <Text style={styles.claimButtonText}>Claim</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </LinearGradient>
+	if (bootstrap.isLoading && !bootstrap.data) {
+		return (
+			<SafeAreaView style={styles.safeArea}>
+				<LoadingState />
+			</SafeAreaView>
+		);
+	}
 
-        <View style={styles.paginationDots}>
-          <View style={[styles.dot, styles.activeDot]} />
-          <View style={styles.dot} />
-          <View style={styles.dot} />
-        </View>
+	if (bootstrap.isError && !bootstrap.data) {
+		return (
+			<SafeAreaView style={styles.safeArea}>
+				<ErrorState onRetry={() => bootstrap.refetch()} />
+			</SafeAreaView>
+		);
+	}
 
-        <View style={styles.recommendedHeader}>
-          <Text style={styles.sectionTitle}>Recommended For You</Text>
-          <TouchableOpacity>
-            <Text style={styles.moreText}>More</Text>
-          </TouchableOpacity>
-        </View>
+	return (
+		<SafeAreaView style={styles.safeArea}>
+			<OfflineNotice pending={pending} syncing={false} />
 
-        <View style={styles.gameCardContainer}>
-          {[{
-            title: 'Congklak',
-            image: require('@/assets/images/congklak-1.png'),
-            tags: [
-              { text: 'Basic Computation', style: styles.pinkTagText, background: styles.pinkTag },
-              { text: 'Algorithms', style: styles.blueTagText, background: styles.blueTag },
-            ],
-          }, {
-            title: 'Benteng',
-            image: require('@/assets/images/benteng-1.png'),
-            tags: [
-              { text: 'Basic Computation', style: styles.pinkTagText, background: styles.pinkTag },
-              { text: 'Cyber Security', style: styles.yellowTagText, background: styles.yellowTag },
-            ],
-          }, {
-            title: 'Engklek',
-            image: require('@/assets/images/engklek-1.png'),
-            tags: [
-              { text: 'Algorithms', style: styles.blueTagText, background: styles.blueTag },
-            ],
-          }, {
-            title: 'Gaple',
-            image: require('@/assets/images/gaple-1.png'),
-            tags: [
-              { text: 'Basic Computation', style: styles.pinkTagText, background: styles.pinkTag },
-              { text: 'Algorithms', style: styles.blueTagText, background: styles.blueTag },
-            ],
-          }].map((game, index) => (
-            <View key={index} style={styles.gameCard}>
-              <View style={styles.gameCardContent}>
-                <Image source={game.image} style={styles.gameImage} />
-                <View style={styles.gameInfo}>
-                  <Text style={styles.gameTitle}>{game.title}</Text>
-                  <View style={styles.tagContainer}>
-                    {game.tags.map((tag, i) => (
-                      <View key={i} style={[styles.tag, tag.background]}>
-                        <Text style={tag.style}>{tag.text}</Text>
-                      </View>
-                    ))}
-                  </View>
-                </View>
-                <TouchableOpacity style={styles.playButton}>
-                  <Text style={styles.playButtonText}>Play!</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          ))}
-        </View>
-      </ScrollView>
-    </SafeAreaView>
-  );
-};
+			<ScrollView
+				contentContainerStyle={styles.container}
+				refreshControl={
+					<RefreshControl
+						refreshing={recommendations.isRefetching}
+						onRefresh={() => {
+							void bootstrap.refetch();
+							void recommendations.refetch();
+						}}
+					/>
+				}
+			>
+				<View style={styles.header}>
+					<Text style={styles.greeting}>
+						{t('home.greeting', { name: bootstrap.data?.profile.displayName ?? '' })}
+					</Text>
+				</View>
+
+				{summary ? (
+					<View style={styles.summaryRow}>
+						<View style={styles.summaryItem}>
+							<Text style={styles.summaryValue}>{summary.points}</Text>
+							<Text style={styles.summaryLabel}>{t('profile.points')}</Text>
+						</View>
+						<View style={styles.summaryDivider} />
+						<View style={styles.summaryItem}>
+							<Text style={styles.summaryValue}>{summary.streakDays}</Text>
+							<Text style={styles.summaryLabel}>
+								{t('home.streak', { count: summary.streakDays })}
+							</Text>
+						</View>
+					</View>
+				) : null}
+
+				{/*
+					A teacher's assignment outranks the engine's pick. The engine
+					makes a recommendation; a teacher has made a decision.
+				*/}
+				{assignment ? (
+					<Pressable
+						accessibilityRole="button"
+						style={styles.assignmentCard}
+						onPress={() => openMission(assignment.targetId)}
+					>
+						<Text style={styles.assignmentLabel}>{t('home.assignmentFromTeacher')}</Text>
+						<Text style={styles.assignmentTarget}>{assignment.targetId}</Text>
+						{assignment.note ? <Text style={styles.assignmentNote}>{assignment.note}</Text> : null}
+					</Pressable>
+				) : null}
+
+				<Text style={styles.sectionTitle}>{t('home.recommendedForYou')}</Text>
+
+				{recommendations.isLoading && !primary ? (
+					<LoadingState />
+				) : !primary ? (
+					<EmptyState title={t('home.emptyTitle')} body={t('home.emptyBody')} />
+				) : (
+					<>
+						<Pressable
+							accessibilityRole="button"
+							accessibilityLabel={`${primary.missionId}. ${t(primary.displayReasonKey)}`}
+							style={styles.primaryCard}
+							onPress={() => openMission(primary.missionId)}
+						>
+							<View style={styles.primaryTop}>
+								<Text style={styles.primaryTitle}>{primary.missionId}</Text>
+								<DomainTag node={primary.primarySkillNodeId} />
+							</View>
+							{/*
+								The "why". A student who is told what to play next and
+								not why has been given an instruction, not an
+								explanation — and the same sentence is what a teacher
+								sees when they ask the dashboard the same question.
+							*/}
+							<Text style={styles.reason}>{t(primary.displayReasonKey)}</Text>
+							<View style={styles.playButton}>
+								<Text style={styles.playButtonText}>{t('games.play')}</Text>
+							</View>
+						</Pressable>
+
+						{alternatives.map((item) => (
+							<Pressable
+								key={item.missionId}
+								accessibilityRole="button"
+								style={styles.altCard}
+								onPress={() => openMission(item.missionId)}
+							>
+								<View style={styles.altInfo}>
+									<Text style={styles.altTitle}>{item.missionId}</Text>
+									<Text style={styles.altReason}>{t(item.displayReasonKey)}</Text>
+								</View>
+								<DomainTag node={item.primarySkillNodeId} />
+							</Pressable>
+						))}
+					</>
+				)}
+			</ScrollView>
+		</SafeAreaView>
+	);
+}
+
+function DomainTag({ node }: { node: string }) {
+	const { t } = useTranslation();
+	const domain = domainOf(node);
+	const colors = domainColors[domain];
+
+	return (
+		<View style={[styles.tag, { backgroundColor: colors.bg }]}>
+			{/* Colour is never the only channel — the label carries the same
+			    information for a colour-blind student on a cheap panel. */}
+			<Text style={[styles.tagText, { color: colors.fg }]}>
+				{t(`progress.domain.${domain}`)}
+			</Text>
+		</View>
+	);
+}
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#fff',
-  } as ViewStyle,
-  container: {
-    padding: 16,
-  } as ViewStyle,
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-    marginTop: 10,
-  } as ViewStyle,
-  logo: {
-    width: 50,
-    height: 35,
-  } as ImageStyle,
-  greeting: {
-    fontSize: 24,
-    fontWeight: 'bold',
-  } as TextStyle,
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 12,
-  } as TextStyle,
-  offerCard: {
-    borderRadius: 16,
-    overflow: 'hidden',
-    marginBottom: 16,
-    flexDirection: 'row',
-    height: 180,
-  } as ViewStyle,
-  bookContainer: {
-    width: '40%',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingLeft: 8,
-  } as ViewStyle,
-  offerImage: {
-    width: '100%',
-    height: 160,
-    resizeMode: 'contain',
-  } as ImageStyle,
-  offerContentWrapper: {
-    width: '60%',
-    padding: 16,
-    justifyContent: 'space-between',
-  } as ViewStyle,
-  offerTopRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 8,
-  } as ViewStyle,
-  offerBadge: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    paddingVertical: 6,
-    paddingHorizontal: 16,
-  } as ViewStyle,
-  offerBadgeText: {
-    fontWeight: 'bold',
-    color: '#000',
-    fontSize: 12,
-  } as TextStyle,
-  discountContainer: {
-    alignItems: 'center',
-  } as ViewStyle,
-  discountShape: {
-    width: 24,
-    height: 24,
-    marginBottom: 4,
-  } as ImageStyle,
-  discountText: {
-    color: '#FFD700',
-    fontWeight: 'bold',
-    fontSize: 10,
-  } as TextStyle,
-  offerList: {
-    marginTop: 8,
-  } as ViewStyle,
-  offerListItem: {
-    color: '#FFF',
-    fontSize: 12,
-    marginBottom: 8,
-    fontWeight: '500',
-  } as TextStyle,
-  claimButtonContainer: {
-    alignItems: 'flex-end',
-    marginTop: 'auto',
-  } as ViewStyle,
-  claimButton: {
-    backgroundColor: '#C6444F',
-    borderRadius: 24,
-    paddingVertical: 6,
-    paddingHorizontal: 24,
-  } as ViewStyle,
-  claimButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 16,
-  } as TextStyle,
-  paginationDots: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginVertical: 16,
-  } as ViewStyle,
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#ddd',
-    marginHorizontal: 4,
-  } as ViewStyle,
-  activeDot: {
-    backgroundColor: '#FFC107',
-  } as ViewStyle,
-  recommendedHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  } as ViewStyle,
-  moreText: {
-    color: '#888',
-    fontSize: 16,
-  } as TextStyle,
-  gameCardContainer: {
-    gap: 12,
-  } as ViewStyle,
-  gameCard: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 12,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  } as ViewStyle,
-  gameCardContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  } as ViewStyle,
-  gameImage: {
-    width: 60,
-    height: 60,
-    borderRadius: 12,
-  } as ImageStyle,
-  gameInfo: {
-    marginLeft: 12,
-    flex: 1,
-  } as ViewStyle,
-  gameTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 6,
-  } as TextStyle,
-  tagContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-  } as ViewStyle,
-  tag: {
-    borderRadius: 16,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    marginRight: 6,
-  } as ViewStyle,
-  pinkTag: {
-    backgroundColor: '#FFCECE',
-  } as ViewStyle,
-  pinkTagText: {
-    fontSize: 10,
-    color: '#FF5757',
-  } as TextStyle,
-  blueTag: {
-    backgroundColor: '#D1E5FF',
-  } as ViewStyle,
-  blueTagText: {
-    fontSize: 10,
-    color: '#0066FF',
-  } as TextStyle,
-  yellowTag: {
-    backgroundColor: '#FFF3D1',
-  } as ViewStyle,
-  yellowTagText: {
-    fontSize: 10,
-    color: '#FFB800',
-  } as TextStyle,
-  playButton: {
-    backgroundColor: '#ED5B3A',
-    borderRadius: 20,
-    paddingVertical: 6,
-    paddingHorizontal: 16,
-  } as ViewStyle,
-  playButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 12,
-  } as TextStyle,
-});
+	safeArea: { flex: 1, backgroundColor: palette.canvas },
+	container: { padding: spacing.lg, gap: spacing.lg },
+	header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+	greeting: { ...typography.title, color: palette.ink900 },
 
-export default HomeScreen;
+	summaryRow: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		backgroundColor: palette.surface,
+		borderRadius: radius.lg,
+		paddingVertical: spacing.lg,
+	},
+	summaryItem: { flex: 1, alignItems: 'center', gap: spacing.xs },
+	summaryValue: { ...typography.display, color: palette.blue600 },
+	summaryLabel: { ...typography.caption, color: palette.ink500 },
+	summaryDivider: { width: StyleSheet.hairlineWidth, alignSelf: 'stretch', backgroundColor: palette.ink100 },
+
+	sectionTitle: { ...typography.heading, color: palette.ink900 },
+
+	assignmentCard: {
+		backgroundColor: palette.orange100,
+		borderRadius: radius.lg,
+		padding: spacing.lg,
+		gap: spacing.xs,
+		minHeight: MIN_TOUCH_TARGET,
+	},
+	assignmentLabel: { ...typography.caption, color: palette.orange600, fontWeight: '700' },
+	assignmentTarget: { ...typography.heading, color: palette.ink900 },
+	assignmentNote: { ...typography.body, color: palette.ink700 },
+
+	primaryCard: {
+		backgroundColor: palette.surface,
+		borderRadius: radius.lg,
+		padding: spacing.lg,
+		gap: spacing.md,
+	},
+	primaryTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
+	primaryTitle: { ...typography.heading, color: palette.ink900, flexShrink: 1 },
+	reason: { ...typography.body, color: palette.ink700 },
+	playButton: {
+		minHeight: MIN_TOUCH_TARGET,
+		backgroundColor: palette.blue600,
+		borderRadius: radius.md,
+		alignItems: 'center',
+		justifyContent: 'center',
+	},
+	playButtonText: { ...typography.label, color: palette.surface },
+
+	altCard: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		justifyContent: 'space-between',
+		gap: spacing.md,
+		backgroundColor: palette.surface,
+		borderRadius: radius.md,
+		padding: spacing.lg,
+		minHeight: MIN_TOUCH_TARGET,
+	},
+	altInfo: { flex: 1, gap: spacing.xs },
+	altTitle: { ...typography.label, color: palette.ink900 },
+	altReason: { ...typography.caption, color: palette.ink500 },
+
+	tag: { paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: radius.pill },
+	tagText: { ...typography.caption, fontWeight: '700' },
+});
