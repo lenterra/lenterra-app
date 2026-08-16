@@ -1,0 +1,184 @@
+{
+  "common": {
+    "continue": "Lanjutkan",
+    "back": "Kembali",
+    "cancel": "Batal",
+    "retry": "Coba lagi",
+    "close": "Tutup",
+    "loading": "Memuat…",
+    "offline": "Tidak ada koneksi",
+    "pending": "Menunggu sinkronisasi",
+    "syncNow": "Sinkronkan sekarang",
+    "seeAll": "Lihat semua"
+  },
+  "auth": {
+    "welcomeTitle": "Belajar lewat permainan tradisional",
+    "welcomeBody": "Congklak dan Benteng, dengan kemampuan yang terukur.",
+    "signInEmail": "Masuk dengan email",
+    "signInGoogle": "Masuk dengan Google",
+    "joinWithCode": "Punya kode kelas?",
+    "codeLabel": "Kode kelas",
+    "codePlaceholder": "6 huruf dari gurumu",
+    "codeInvalid": "Kode kelas itu tidak berlaku",
+    "codeClassFull": "Kelas itu sudah penuh",
+    "codeTooManyTries": "Terlalu banyak percobaan. Coba lagi sebentar lagi.",
+    "nameLabel": "Nama panggilanmu",
+    "nameHelp": "Nama ini dilihat teman sekelasmu",
+    "nameTooShort": "Nama terlalu pendek",
+    "nameTooLong": "Nama terlalu panjang",
+    "nameContainsContact": "Jangan pakai nomor telepon atau alamat di namamu",
+    "nameProfanity": "Pilih nama lain, ya",
+    "signOut": "Keluar",
+    "signOutWarningTitle": "Keluar sekarang?",
+    "signOutWarningPending": "Ada {{count}} hasil yang belum terkirim. Hasil itu tetap tersimpan di HP ini dan akan terkirim saat kamu masuk lagi.",
+    "recognizeYourself": "Kenali profilmu",
+    "recognizeHelp": "Kalau kamu pernah pakai kelas ini, pilih profilmu. Gurumu yang menyetujui."
+  },
+  "home": {
+    "greeting": "Halo, {{name}}",
+    "continuePlaying": "Lanjutkan bermain",
+    "recommendedForYou": "Disarankan untukmu",
+    "reason": {
+      "gap": "Satu langkah lagi menuju tingkat berikutnya",
+      "unevidenced": "Kemampuan yang belum pernah kamu coba",
+      "reinforce": "Menyegarkan kembali yang sudah kamu kuasai",
+      "placement": "Untuk mengenali kemampuanmu",
+      "recovery": "Sedikit lebih mudah, supaya kembali percaya diri"
+    },
+    "assignmentFromTeacher": "Dari gurumu",
+    "streak": "{{count}} hari berturut-turut",
+    "points": "{{count}} poin",
+    "emptyTitle": "Belum ada apa-apa di sini",
+    "emptyBody": "Mulai satu misi untuk melihat kemajuanmu."
+  },
+  "games": {
+    "title": "Permainan",
+    "congklak": "Congklak",
+    "benteng": "Benteng",
+    "missionCount": "{{done}} dari {{total}} misi",
+    "locked": "Selesaikan misi sebelumnya dulu",
+    "play": "Main",
+    "replay": "Main lagi",
+    "aboutTitle": "Tentang permainan ini",
+    "howToPlay": "Cara bermain"
+  },
+  "play": {
+    "yourTurn": "Giliranmu",
+    "opponentTurn": "Giliran lawan",
+    "movesLeft": "Sisa {{count}} langkah",
+    "skipAnimation": "Ketuk untuk melewati",
+    "hintOffer": "Mau petunjuk?",
+    "hintNotAnswer": "Petunjuk memberi tahu caranya, bukan jawabannya",
+    "quit": "Keluar dari misi",
+    "quitConfirm": "Kemajuanmu di misi ini akan hilang. Keluar?",
+    "resumeTitle": "Lanjutkan misi?",
+    "resumeBody": "Kamu berhenti di tengah misi ini."
+  },
+  "result": {
+    "success": "Berhasil!",
+    "failure": "Belum berhasil",
+    "pointsEarned": "+{{count}} poin",
+    "bandUp": "{{skill}} naik ke {{band}}",
+    "pendingSync": "Hasil ini menunggu sinkronisasi",
+    "nextMission": "Misi berikutnya",
+    "tryAgain": "Coba lagi",
+    "otherGames": "Permainan lain",
+    "correctionTitle": "Hasil diperbarui",
+    "correctionBody": "Setelah diperiksa server, hasil misi ini berubah."
+  },
+  "congklak": {
+    "store": "lumbung",
+    "seed": "biji",
+    "capture": "menembak",
+    "extraTurn": "Giliran lagi!",
+    "chain": "Rantai {{count}}",
+    "fail": {
+      "ranOut": "Bijimu habis sebelum mencapai lumbung",
+      "greedy": "Kamu mengambil lubang terbanyak, dan lawan menembak balik",
+      "outOfMoves": "Langkahmu habis sebelum tujuan tercapai",
+      "notEnough": "Belum cukup biji di lumbungmu"
+    }
+  },
+  "benteng": {
+    "base": "benteng",
+    "prisoner": "tawanan",
+    "freshness": "Kesegaran",
+    "freshnessHelp": "Semakin kecil, semakin kuat",
+    "staleCapture": "Unitmu terakhir menyentuh benteng {{mine}} giliran lalu; lawan {{theirs}} giliran lalu",
+    "refreshed": "Izinmu baru lagi",
+    "fail": {
+      "captured": "Semua unitmu tertangkap",
+      "baseTouched": "Lawan menyentuh bentengmu",
+      "outOfTurns": "Giliranmu habis"
+    }
+  },
+  "progress": {
+    "title": "Kemajuan",
+    "band": {
+      "not_started": "Belum dimulai",
+      "emerging": "Baru mulai",
+      "developing": "Sedang berkembang",
+      "proficient": "Mahir",
+      "mastered": "Menguasai"
+    },
+    "domain": {
+      "computation": "Komputasi Dasar",
+      "algorithms": "Algoritma",
+      "security": "Keamanan Siber"
+    },
+    "evidenceCount": "{{count}} bukti",
+    "needsSecondSource": "Coba misi lain untuk membuktikan kemampuan ini",
+    "trend": { "up": "naik", "flat": "tetap", "down": "turun" }
+  },
+  "board": {
+    "title": "Papan Peringkat",
+    "class": "Kelas",
+    "school": "Sekolah",
+    "thisWeek": "Minggu ini",
+    "allTime": "Sepanjang waktu",
+    "you": "Kamu",
+    "asOf": "Data per {{time}}",
+    "disabled": "Gurumu sedang menonaktifkan papan peringkat",
+    "emptyTitle": "Belum ada peringkat",
+    "emptyBody": "Mainkan satu misi untuk masuk ke papan."
+  },
+  "courses": {
+    "title": "Materi",
+    "lessonCount": "{{done}} dari {{total}} pelajaran",
+    "checkTitle": "Cek pemahaman",
+    "checkPassed": "Kamu paham!",
+    "checkFailed": "Belum, baca lagi bagian ini",
+    "downloadForOffline": "Simpan untuk dibaca offline"
+  },
+  "profile": {
+    "title": "Profil",
+    "friendCode": "Kode temanmu",
+    "friendCodeHelp": "Berikan ini ke teman sekelasmu",
+    "rotateFriendCode": "Ganti kode",
+    "friends": "Teman",
+    "certificates": "Sertifikat",
+    "points": "Poin",
+    "pointsHistory": "Riwayat poin",
+    "addFriend": "Tambah teman",
+    "friendCodeNotFound": "Kode itu tidak ditemukan di sekolahmu",
+    "settings": "Pengaturan",
+    "language": "Bahasa",
+    "dataSaver": "Hemat kuota",
+    "dataSaverHelp": "Hanya unduh materi saat terhubung Wi-Fi"
+  },
+  "sync": {
+    "pendingCount": "{{count}} menunggu terkirim",
+    "waitingSince": "Menunggu sejak {{time}}",
+    "allSynced": "Semua sudah terkirim",
+    "syncing": "Mengirim…",
+    "failedPermanent": "{{count}} hasil tidak bisa dikirim",
+    "explainRejected": "Hasil ini tidak cocok saat diperiksa server, jadi tidak dihitung."
+  },
+  "error": {
+    "generic": "Ada yang tidak beres. Coba lagi.",
+    "offline": "Kamu sedang offline. Yang kamu mainkan tetap tersimpan.",
+    "sessionExpired": "Masuk lagi untuk melanjutkan",
+    "updateRequired": "Perbarui aplikasi untuk melanjutkan",
+    "catalogStale": "Materimu perlu diperbarui"
+  }
+}

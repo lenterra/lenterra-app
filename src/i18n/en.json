@@ -1,0 +1,188 @@
+{
+  "common": {
+    "continue": "Continue",
+    "back": "Back",
+    "cancel": "Cancel",
+    "retry": "Try again",
+    "close": "Close",
+    "loading": "Loading…",
+    "offline": "No connection",
+    "pending": "Waiting to sync",
+    "syncNow": "Sync now",
+    "seeAll": "See all"
+  },
+  "auth": {
+    "welcomeTitle": "Learn through traditional games",
+    "welcomeBody": "Congklak and Benteng, with skills you can actually measure.",
+    "signInEmail": "Sign in with email",
+    "signInGoogle": "Sign in with Google",
+    "joinWithCode": "Have a class code?",
+    "codeLabel": "Class code",
+    "codePlaceholder": "6 letters from your teacher",
+    "codeInvalid": "That class code is not valid",
+    "codeClassFull": "That class is full",
+    "codeTooManyTries": "Too many attempts. Try again shortly.",
+    "nameLabel": "Your display name",
+    "nameHelp": "Your classmates see this name",
+    "nameTooShort": "That name is too short",
+    "nameTooLong": "That name is too long",
+    "nameContainsContact": "Do not put a phone number or address in your name",
+    "nameProfanity": "Please choose another name",
+    "signOut": "Sign out",
+    "signOutWarningTitle": "Sign out now?",
+    "signOutWarningPending": "{{count}} results have not been sent yet. They stay on this phone and will send when you sign in again.",
+    "recognizeYourself": "Find your profile",
+    "recognizeHelp": "If you have used this class before, pick your profile. Your teacher approves it."
+  },
+  "home": {
+    "greeting": "Hello, {{name}}",
+    "continuePlaying": "Continue playing",
+    "recommendedForYou": "Recommended for you",
+    "reason": {
+      "gap": "One step from the next level",
+      "unevidenced": "A skill you have not tried yet",
+      "reinforce": "Refreshing something you already know",
+      "placement": "To find your level",
+      "recovery": "A little easier, to rebuild confidence"
+    },
+    "assignmentFromTeacher": "From your teacher",
+    "streak": "{{count}} days in a row",
+    "points": "{{count}} points",
+    "emptyTitle": "Nothing here yet",
+    "emptyBody": "Play one mission to see your progress."
+  },
+  "games": {
+    "title": "Games",
+    "congklak": "Congklak",
+    "benteng": "Benteng",
+    "missionCount": "{{done}} of {{total}} missions",
+    "locked": "Finish the earlier missions first",
+    "play": "Play",
+    "replay": "Play again",
+    "aboutTitle": "About this game",
+    "howToPlay": "How to play"
+  },
+  "play": {
+    "yourTurn": "Your turn",
+    "opponentTurn": "Opponent's turn",
+    "movesLeft": "{{count}} moves left",
+    "skipAnimation": "Tap to skip",
+    "hintOffer": "Want a hint?",
+    "hintNotAnswer": "A hint tells you how, not what",
+    "quit": "Leave this mission",
+    "quitConfirm": "Your progress in this mission will be lost. Leave?",
+    "resumeTitle": "Continue this mission?",
+    "resumeBody": "You stopped part way through."
+  },
+  "result": {
+    "success": "Well done!",
+    "failure": "Not yet",
+    "pointsEarned": "+{{count}} points",
+    "bandUp": "{{skill}} moved up to {{band}}",
+    "pendingSync": "This result is waiting to sync",
+    "nextMission": "Next mission",
+    "tryAgain": "Try again",
+    "otherGames": "Other games",
+    "correctionTitle": "Result updated",
+    "correctionBody": "After the server checked it, this result changed."
+  },
+  "congklak": {
+    "store": "store",
+    "seed": "seed",
+    "capture": "capture",
+    "extraTurn": "Another turn!",
+    "chain": "Chain of {{count}}",
+    "fail": {
+      "ranOut": "Your seeds ran out before reaching the store",
+      "greedy": "You took the fullest pit, and your opponent captured back",
+      "outOfMoves": "You ran out of moves before reaching the goal",
+      "notEnough": "Not enough seeds in your store yet"
+    }
+  },
+  "benteng": {
+    "base": "base",
+    "prisoner": "prisoner",
+    "freshness": "Freshness",
+    "freshnessHelp": "Lower is stronger",
+    "staleCapture": "Your unit last touched base {{mine}} turns ago; theirs {{theirs}} turns ago",
+    "refreshed": "Your standing is fresh again",
+    "fail": {
+      "captured": "All your units were captured",
+      "baseTouched": "The opponent reached your base",
+      "outOfTurns": "You ran out of turns"
+    }
+  },
+  "progress": {
+    "title": "Progress",
+    "band": {
+      "not_started": "Not started",
+      "emerging": "Emerging",
+      "developing": "Developing",
+      "proficient": "Proficient",
+      "mastered": "Mastered"
+    },
+    "domain": {
+      "computation": "Basic Computation",
+      "algorithms": "Algorithms",
+      "security": "Cyber Security"
+    },
+    "evidenceCount": "{{count}} pieces of evidence",
+    "needsSecondSource": "Try another mission to prove this skill",
+    "trend": {
+      "up": "rising",
+      "flat": "steady",
+      "down": "falling"
+    }
+  },
+  "board": {
+    "title": "Leaderboard",
+    "class": "Class",
+    "school": "School",
+    "thisWeek": "This week",
+    "allTime": "All time",
+    "you": "You",
+    "asOf": "As of {{time}}",
+    "disabled": "Your teacher has turned the leaderboard off",
+    "emptyTitle": "No rankings yet",
+    "emptyBody": "Play one mission to appear here."
+  },
+  "courses": {
+    "title": "Courses",
+    "lessonCount": "{{done}} of {{total}} lessons",
+    "checkTitle": "Check your understanding",
+    "checkPassed": "You have got it",
+    "checkFailed": "Not quite — read that part again",
+    "downloadForOffline": "Save for offline reading"
+  },
+  "profile": {
+    "title": "Profile",
+    "friendCode": "Your friend code",
+    "friendCodeHelp": "Give this to your classmates",
+    "rotateFriendCode": "Change code",
+    "friends": "Friends",
+    "certificates": "Certificates",
+    "points": "Points",
+    "pointsHistory": "Points history",
+    "addFriend": "Add friend",
+    "friendCodeNotFound": "That code was not found in your school",
+    "settings": "Settings",
+    "language": "Language",
+    "dataSaver": "Data saver",
+    "dataSaverHelp": "Only download content on Wi-Fi"
+  },
+  "sync": {
+    "pendingCount": "{{count}} waiting to send",
+    "waitingSince": "Waiting since {{time}}",
+    "allSynced": "Everything is synced",
+    "syncing": "Sending…",
+    "failedPermanent": "{{count}} results could not be sent",
+    "explainRejected": "This result did not match when the server checked it, so it does not count."
+  },
+  "error": {
+    "generic": "Something went wrong. Try again.",
+    "offline": "You are offline. What you play is still saved.",
+    "sessionExpired": "Sign in again to continue",
+    "updateRequired": "Update the app to continue",
+    "catalogStale": "Your content needs updating"
+  }
+}
