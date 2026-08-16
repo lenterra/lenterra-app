@@ -1,281 +1,187 @@
-import React from 'react';
+/**
+ * The leaderboard.
+ *
+ * Every name, point total and rank on this screen used to be a string literal:
+ * a `topThree` array with "Faiz 43", "You 40", "Nadya 38", and a bundled photo
+ * per person. It also contradicted the profile tab, which claimed the same
+ * student was rank #3 with 40 points while this screen put them at #2 — two
+ * screens inventing different numbers for one student.
+ *
+ * Three things this screen has to be honest about:
+ *
+ *  - **Points, never mastery.** Ranking children by inferred ability is a
+ *    different and more harmful product (10-03).
+ *  - **When the data is from.** A cached board shown offline must say so, or a
+ *    student reads a stale standing as current (PRD-APP-032).
+ *  - **When a teacher has switched it off.** Not an empty board, which looks
+ *    like nobody has played.
+ */
+
+import { useMemo } from 'react';
 import {
-  StyleSheet,
-  Text,
-  View,
-  Image,
-  ScrollView,
-  SafeAreaView,
-  TouchableOpacity,
-  ImageSourcePropType,
+	RefreshControl,
+	SafeAreaView,
+	ScrollView,
+	StyleSheet,
+	Text,
+	View,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { useTranslation } from 'react-i18next';
 
-interface User {
-  name: string;
-  points: number;
-  image: ImageSourcePropType;
-  position: number;
-  isUser?: boolean;
-}
+import { activeAccountId } from '@/src/data/cache/storage';
+import { useLeaderboard, type LeaderboardEntry } from '@/src/data/queries/hooks';
+import { RpcError } from '@/src/data/nakama/rpc';
+import { Avatar } from '@/src/ui/components/Avatar';
+import {
+	EmptyState,
+	ErrorState,
+	LoadingState,
+} from '@/src/ui/components/ScreenState';
+import { palette, radius, spacing, typography } from '@/src/ui/tokens';
 
-interface NavItem {
-  icon: ImageSourcePropType;
-  label: string;
-  active: boolean;
-}
+export default function BoardScreen() {
+	const { t } = useTranslation();
+	const accountId = activeAccountId();
+	const board = useLeaderboard(accountId, 'class', 'week');
 
-export default function App(): JSX.Element {
-  const topThree: User[] = [
-    { name: 'Faiz', points: 43, image: require('@/assets/images/faiz.png'), position: 1 },
-    { name: 'You', points: 40, image: require('@/assets/images/firsa.png'), position: 2, isUser: true },
-    { name: 'Nadya', points: 38, image: require('@/assets/images/nadya.png'), position: 3 },
-  ];
+	const entries: LeaderboardEntry[] = board.data?.entries ?? [];
+	const podium = useMemo(() => entries.slice(0, 3), [entries]);
+	const rest = useMemo(() => entries.slice(3), [entries]);
 
-  const others: User[] = [
-    { name: 'Athaya', points: 36, image: require('@/assets/images/athaya.png'), position: 4 },
-    { name: 'Sussy', points: 35, image: require('@/assets/images/sussy.png'), position: 5 },
-    { name: 'Jane Doe', points: 34, image: require('@/assets/images/you.png'), position: 6 },
-    { name: 'Saski', points: 33, image: require('@/assets/images/saski.png'), position: 7 },
-  ];
+	// A teacher turning the board off is a deliberate state with its own
+	// message, not an error and not an empty list.
+	if (board.error instanceof RpcError && board.error.code === 'FORBIDDEN') {
+		return (
+			<SafeAreaView style={styles.container}>
+				<EmptyState title={t('board.title')} body={t('board.disabled')} />
+			</SafeAreaView>
+		);
+	}
 
-  const navItems: NavItem[] = [
-    { icon: require('@/assets/icons/chart-2.png'), label: 'BOARD', active: true },
-    { icon: require('@/assets/icons/star.png'), label: 'GAMES', active: false },
-    { icon: require('@/assets/icons/home.png'), label: 'HOME', active: false },
-    { icon: require('@/assets/icons/bookmark.png'), label: 'COURSES', active: false },
-    { icon: require('@/assets/icons/profile.png'), label: 'PROFILE', active: false },
-  ];
+	// Only show a spinner when there is genuinely nothing to show. With cached
+	// data the board renders and refreshes behind it.
+	if (board.isLoading && entries.length === 0) {
+		return (
+			<SafeAreaView style={styles.container}>
+				<LoadingState />
+			</SafeAreaView>
+		);
+	}
 
-  return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar style="auto" />
-      <ScrollView contentContainerStyle={styles.scrollView}>
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Hi, Firsa</Text>
-          <Image source={require('@/assets/images/lenterra-logo.png')} style={styles.logoImage} />
-        </View>
+	if (board.isError && entries.length === 0) {
+		return (
+			<SafeAreaView style={styles.container}>
+				<ErrorState
+					onRetry={() => board.refetch()}
+					message={
+						board.error instanceof RpcError && board.error.code === 'OFFLINE'
+							? t('error.offline')
+							: undefined
+					}
+				/>
+			</SafeAreaView>
+		);
+	}
 
-        <Text style={styles.sectionTitle}>Top Trending</Text>
-        <View style={styles.trendingCard}>
-          <Image source={require('@/assets/images/congklak-3.png')} style={styles.trendingImage} resizeMode="contain" />
-        </View>
+	return (
+		<SafeAreaView style={styles.container}>
+			<StatusBar style="auto" />
+			<ScrollView
+				contentContainerStyle={styles.scrollView}
+				refreshControl={
+					<RefreshControl refreshing={board.isRefetching} onRefresh={() => board.refetch()} />
+				}
+			>
+				<View style={styles.header}>
+					<Text style={styles.headerTitle}>{t('board.title')}</Text>
+					<Text style={styles.period}>{t('board.thisWeek')}</Text>
+				</View>
 
-        <Text style={styles.sectionTitle}>Leaderboard</Text>
+				{entries.length === 0 ? (
+					<EmptyState title={t('board.emptyTitle')} body={t('board.emptyBody')} />
+				) : (
+					<>
+						<View style={styles.podium}>
+							{podium.map((entry) => (
+								<View key={entry.userId} style={styles.podiumItem}>
+									<Avatar name={entry.displayName} size={entry.rank === 1 ? 64 : 52} highlighted={entry.isSelf} />
+									<Text style={styles.podiumRank}>{entry.rank}</Text>
+									<Text numberOfLines={1} style={styles.podiumName}>
+										{entry.isSelf ? t('board.you') : entry.displayName}
+									</Text>
+									<Text style={styles.podiumPoints}>
+										{t('home.points', { count: entry.points })}
+									</Text>
+								</View>
+							))}
+						</View>
 
-        <View style={styles.topThreeContainer}>
-          {topThree.map((_, index) => {
-            const displayIndex = index === 0 ? 1 : index === 1 ? 0 : 2;
-            const userData = topThree[displayIndex];
+						<View style={styles.list}>
+							{rest.map((entry) => (
+								<View
+									key={entry.userId}
+									style={[styles.row, entry.isSelf && styles.rowSelf]}
+								>
+									<Text style={styles.rowRank}>{entry.rank}</Text>
+									<Avatar name={entry.displayName} size={36} highlighted={entry.isSelf} />
+									<Text numberOfLines={1} style={styles.rowName}>
+										{entry.isSelf ? t('board.you') : entry.displayName}
+									</Text>
+									<Text style={styles.rowPoints}>{entry.points}</Text>
+								</View>
+							))}
+						</View>
+					</>
+				)}
 
-            return (
-              <View key={userData.position} style={styles.topThreeItem}>
-                {userData.position === 1 && (
-                  <Image source={require('@/assets/icons/crown.png')} style={styles.crownImage} />
-                )}
-                <View style={[styles.topThreeImageContainer, userData.position === 1 && styles.firstPlaceContainer]}>
-                  <Image source={userData.image} style={styles.topThreeImage} />
-                </View>
-                <View style={[styles.positionBadge, userData.position === 1 && styles.firstPlaceBadge]}>
-                  <Text style={styles.positionText}>{userData.position}</Text>
-                </View>
-                <Text style={styles.nameText}>{userData.name}</Text>
-                <View style={styles.pointsContainer}>
-                  <Image source={require('@/assets/icons/pts.png')} style={styles.ptsImage} />
-                  <Text style={styles.pointsText}>{userData.points} pts</Text>
-                </View>
-              </View>
-            );
-          })}
-        </View>
-
-        <View style={styles.othersContainer}>
-          {others.map((user) => (
-            <View key={user.position} style={[styles.otherUserRow, user.isUser && styles.userRow]}>
-              <View style={styles.otherUserLeft}>
-                <View style={styles.otherPositionBadge}>
-                  <Text style={styles.otherPositionText}>{user.position}</Text>
-                </View>
-                <Image source={user.image} style={styles.otherUserImage} />
-                <Text style={styles.otherNameText}>{user.name}</Text>
-              </View>
-              <View style={styles.otherPointsContainer}>
-                <Text style={styles.otherPointsText}>{user.points} pts</Text>
-              </View>
-            </View>
-          ))}
-        </View>
-      </ScrollView>
-    </SafeAreaView>
-  );
+				{/*
+					A cached board looks identical to a live one, so it has to say
+					when it was generated. Without this a student on a bus reads a
+					three-day-old standing as this morning's.
+				*/}
+				{board.data?.generatedAt ? (
+					<Text style={styles.asOf}>
+						{t('board.asOf', { time: new Date(board.data.generatedAt).toLocaleString() })}
+					</Text>
+				) : null}
+			</ScrollView>
+		</SafeAreaView>
+	);
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  scrollView: {
-    paddingHorizontal: 20,
-    paddingBottom: 80,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 20,
-    marginBottom: 10,
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
-  logoImage: {
-    width: 40,
-    height: 40,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginTop: 20,
-    marginBottom: 15,
-  },
-  trendingCard: {
-    backgroundColor: '#99ccff',
-    borderRadius: 15,
-    padding: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: 150,
-    overflow: 'hidden',
-  },
-  trendingImage: {
-    width: '100%',
-    height: '100%',
-  },
-  topThreeContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'flex-end',
-    marginBottom: 20,
-  },
-  topThreeItem: {
-    alignItems: 'center',
-    position: 'relative',
-  },
-  topThreeImageContainer: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    overflow: 'hidden',
-    borderWidth: 2,
-    borderColor: '#e0e0e0',
-    marginBottom: 5,
-    position: 'relative',
-  },
-  firstPlaceContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    borderColor: '#FFD700',
-    borderWidth: 2,
-    zIndex: 1,
-  },
-  topThreeImage: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 35,
-  },
-  crownImage: {
-    width: 40,
-    height: 40,
-    zIndex: 2,
-    marginBottom: -10,
-  },
-  positionBadge: {
-    backgroundColor: '#f0f0f0',
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 5,
-  },
-  firstPlaceBadge: {
-    backgroundColor: '#FFEB3B',
-  },
-  positionText: {
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  nameText: {
-    fontSize: 14,
-    marginTop: 2,
-  },
-  pointsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 2,
-  },
-  ptsImage: {
-    width: 16,
-    height: 16,
-    marginRight: 3,
-  },
-  pointsText: {
-    fontSize: 12,
-    color: '#666',
-  },
-  othersContainer: {
-    backgroundColor: '#f9f9f9',
-    borderRadius: 15,
-    overflow: 'hidden',
-  },
-  otherUserRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 12,
-    backgroundColor: 'white',
-    marginBottom: 2,
-    borderRadius: 10,
-  },
-  userRow: {
-    backgroundColor: '#e3f7d8',
-  },
-  otherUserLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  otherPositionBadge: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: '#f0f0f0',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 10,
-  },
-  otherPositionText: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  otherUserImage: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginRight: 15,
-  },
-  otherNameText: {
-    fontSize: 15,
-    fontWeight: '500',
-  },
-  otherPointsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  otherPointsText: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
+	container: { flex: 1, backgroundColor: palette.canvas },
+	scrollView: { padding: spacing.lg, gap: spacing.lg },
+	header: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
+	headerTitle: { ...typography.title, color: palette.ink900 },
+	period: { ...typography.caption, color: palette.ink500 },
+	podium: {
+		flexDirection: 'row',
+		justifyContent: 'space-around',
+		alignItems: 'flex-end',
+		backgroundColor: palette.surface,
+		borderRadius: radius.lg,
+		padding: spacing.lg,
+		gap: spacing.sm,
+	},
+	podiumItem: { alignItems: 'center', gap: spacing.xs, flex: 1 },
+	podiumRank: { ...typography.heading, color: palette.blue600 },
+	podiumName: { ...typography.label, color: palette.ink900, maxWidth: 96, textAlign: 'center' },
+	podiumPoints: { ...typography.caption, color: palette.ink500 },
+	list: { backgroundColor: palette.surface, borderRadius: radius.lg, overflow: 'hidden' },
+	row: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		gap: spacing.md,
+		paddingHorizontal: spacing.lg,
+		paddingVertical: spacing.md,
+		borderBottomWidth: StyleSheet.hairlineWidth,
+		borderBottomColor: palette.ink100,
+	},
+	rowSelf: { backgroundColor: palette.blue050 },
+	rowRank: { ...typography.label, color: palette.ink500, width: 24 },
+	rowName: { ...typography.body, color: palette.ink900, flex: 1 },
+	rowPoints: { ...typography.label, color: palette.ink700 },
+	asOf: { ...typography.caption, color: palette.ink300, textAlign: 'center' },
 });

@@ -114,6 +114,11 @@ const LeaderboardSchema = z.object({
   cursor: z.string().nullable(),
 });
 
+export type LeaderboardEntry = z.infer<typeof LeaderboardSchema>['entries'][number];
+export type Leaderboard = z.infer<typeof LeaderboardSchema>;
+export type Progress = z.infer<typeof ProgressSchema>;
+export type Recommendation = z.infer<typeof RecommendationSchema>;
+
 const PointsSchema = z.object({
   balance: z.number(),
   entries: z.array(z.object({ delta: z.number(), reasonKey: z.string(), at: z.string() })),
