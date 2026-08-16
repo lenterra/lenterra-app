@@ -23,7 +23,10 @@ import {
 } from 'react-native';
 import { LineChart, PieChart } from 'react-native-chart-kit';
 import { AnimatedCircularProgress } from 'react-native-circular-progress';
-import nakamaClient, { setSession, getSession, clearSession } from "@/lib/nakama-client";
+import { useTranslation } from "react-i18next";
+
+import { activeAccountId } from "@/src/data/cache/storage";
+import { useBootstrap } from "@/src/data/queries/hooks";
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -71,27 +74,19 @@ let isLoggedIn = false;
 export default function App() {
   const account = useActiveAccount();
   const theme = useColorScheme();
-  useEffect(() => {
-    console.log("Inside useEffect");
-    const syncSession = async () => {
-      console.log("Inside syncSession");
-      if (account) {
-        console.log("account:", account);
-        console.log("getSession():", getSession());
-        if (!getSession()) {
-          const session = await nakamaClient.authenticateCustom(account.address);
-          console.log(session);
-          setSession(session);
-        }
-      } else {
-        if (getSession()) {
-          clearSession();
-        }
-      }
-    };
-  
-    syncSession();
-  }, [account?.address]);
+
+  const { t } = useTranslation();
+  const accountId = activeAccountId();
+  const bootstrap = useBootstrap(accountId);
+  // The friend code is server-owned and rotatable. It replaces the wallet
+  // address as the student-visible identifier (PRD-ONB-003).
+  const friendCode = bootstrap.data?.profile.friendCode ?? "";
+
+  // Authentication used to happen here: a `useEffect` calling
+  // `authenticateCustom(account.address)` with nothing proving the caller
+  // controlled that address. It has moved to the app-entry gate in
+  // `app/_layout.tsx`, which signs in through the verifier and reaches this
+  // screen only once there is a real session. Nothing on this tab authenticates.
 
 
   const scrollRef = useRef<ScrollView>(null);
@@ -473,14 +468,22 @@ export default function App() {
                 </TouchableOpacity>
               </View>
               
+              {/*
+                The wallet address used to be printed here as "Your ID". It is
+                a permanent, unrotatable, publicly-linkable identifier for a
+                child, and showing it is what made impersonation practical —
+                anyone who read it off a classmate's screen could sign in as
+                them. The friend code replaces it: same purpose, rotatable, and
+                scoped to one school.
+              */}
               <View style={styles.idContainer}>
-                <Text style={styles.idLabel}>Your ID:</Text>
-                <Text 
-                numberOfLines={1}
-                ellipsizeMode="middle" // options: 'head', 'middle', 'tail', 'clip'
-                style={{ width: 200, fontWeight: 'bold'}}>{account.address}</Text>
+                <Text style={styles.idLabel}>{t("profile.friendCode")}</Text>
+                <Text
+                  numberOfLines={1}
+                  accessibilityLabel={t("profile.friendCode")}
+                  style={{ width: 200, fontWeight: 'bold'}}>{friendCode}</Text>
               </View>
-              
+
               <View style={styles.friendsList}>
                 {activeFriendsTab === 'friend' && friendsList.map(friend => (
                   <FriendCard 

@@ -1,29 +1,16 @@
-import { createThirdwebClient, getContract } from "thirdweb";
-import { base, baseSepolia } from "thirdweb/chains";
-import { setThirdwebDomains } from "thirdweb/utils";
+/**
+ * Kept as a re-export so existing screen imports keep working while they are
+ * migrated one at a time. The real definitions live in `src/lib/thirdweb.ts`.
+ *
+ * **`usdcContract` is gone.** It pointed at Base *mainnet* USDC while the app
+ * chain was Base Sepolia, it was imported nowhere, and it implies a feature —
+ * transferable money in a 13-year-old's account — that is hard-blocked pending
+ * a safeguarding and regulatory review (OQ-07). A live mainnet token contract
+ * sitting in the source of a children's app is not a neutral leftover.
+ *
+ * **The `contract` handle is gone too.** Nothing in R1 reads or writes a chain;
+ * it returns with certificate minting, against a contract that has been written
+ * and audited.
+ */
 
-const clientId = process.env.EXPO_PUBLIC_THIRDWEB_CLIENT_ID!;
-
-if (!clientId) {
-  throw new Error(
-    "Missing EXPO_PUBLIC_THIRDWEB_CLIENT_ID - make sure to set it in your .env file"
-  );
-}
-
-export const client = createThirdwebClient({
-  clientId,
-});
-
-export const chain = baseSepolia;
-
-export const contract = getContract({
-  client,
-  address: "0x82e50a6BF13A70366eDFC871f8FB8a428C43Dc03",
-  chain,
-});
-
-export const usdcContract = getContract({
-  address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-  chain: base,
-  client,
-});
+export { chain, thirdwebClient as client } from '@/src/lib/thirdweb';
