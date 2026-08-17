@@ -29,6 +29,7 @@ import { createQueryClient, restoreQueryCache } from "@/src/data/queries/client"
 import { recoverInflight } from "@/src/data/outbox/queue";
 import { SyncProvider } from "@/src/features/sync/SyncProvider";
 import { useSession } from "@/src/features/onboarding/useSession";
+import { loadCatalogStrings } from "@/src/data/cache/catalogSync";
 import { initI18n } from "@/src/i18n";
 import { startConnectivityWatch } from "@/src/lib/net";
 
@@ -53,6 +54,10 @@ export default function RootLayout() {
 		// a student who opens the app offline sees their progress rather than a
 		// spinner over data we already have.
 		restoreQueryCache(queryClient, session.accountId);
+		// Mission titles live in the catalog, not the app bundle. A student
+		// opening offline has them cached but nothing has handed them to the
+		// translator yet.
+		loadCatalogStrings(session.accountId);
 		// Anything left mid-send by a killed app is safe to retry — the
 		// idempotency key makes a duplicate free.
 		recoverInflight(session.accountId);

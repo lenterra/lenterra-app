@@ -33,9 +33,11 @@ import {
   evictVersion,
   missionsFor,
   partsToPull,
+  readPart,
   setCurrentCatalogVersion,
   storePart,
 } from './catalog';
+import { applyCatalogStrings, SUPPORTED_LOCALES } from '../../i18n';
 import { ACCOUNT_KEYS, accountStorage, readJson, writeJson } from './storage';
 
 /** Matches `MAX_PULL_BYTES` server-side. Kept just under it for headroom. */
@@ -253,6 +255,7 @@ export async function syncCatalog(
   }
 
   commitVersion(accountId, manifest.version, pullable, have);
+  loadCatalogStrings(accountId, manifest.version);
   clearDeferred(accountId);
   return { status: 'updated', version: manifest.version, partsStored: wanted.length };
 }
@@ -315,6 +318,24 @@ function batches(parts: ManifestPart[]): ManifestPart[][] {
   }
   if (current.length > 0) out.push(current);
   return out;
+}
+
+/**
+ * Push the catalog's own strings into i18next.
+ *
+ * Called after a successful pull and again at startup, because a student who
+ * opens the app offline has the strings cached but nothing has loaded them
+ * into the translator yet — and without this every mission title renders as
+ * the literal key.
+ */
+export function loadCatalogStrings(accountId: string, version?: string): void {
+  const target = version ?? currentCatalogVersion(accountId);
+  if (!target) return;
+
+  for (const locale of SUPPORTED_LOCALES) {
+    const strings = readPart<Record<string, unknown>>(accountId, target, `strings.${locale}`);
+    if (strings) applyCatalogStrings(locale, strings);
+  }
 }
 
 /**

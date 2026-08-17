@@ -49,6 +49,29 @@ export function setLocale(locale: Locale): void {
   void i18next.changeLanguage(locale);
 }
 
+/**
+ * Merge strings that arrived with the catalog.
+ *
+ * Mission titles, briefs, hints and failure diagnostics are *content*, not app
+ * strings: they ship with the catalog so a new mission can reach a student
+ * without an app release (PRD-CNT-007). They still have to reach i18next,
+ * because `t(mission.titleKey)` is how a screen renders one — without this
+ * every mission on the games tab shows the literal key
+ * `mission.congklak.m01.title`.
+ *
+ * Merged rather than replacing the bundle, so a catalog that omits a key falls
+ * back to the built-in strings instead of blanking the UI.
+ */
+export function applyCatalogStrings(locale: Locale, strings: Record<string, unknown>): void {
+  // A catalog can finish downloading before the translator is up — the sync
+  // engine runs on its own triggers. Missing strings render as keys, which is
+  // recoverable; throwing here would take down the sync that fetched them.
+  if (!i18next.isInitialized) {
+    initI18n();
+  }
+  i18next.addResourceBundle(locale, 'translation', strings, true, true);
+}
+
 export function currentLocale(): Locale {
   const language = i18next.language;
   return (SUPPORTED_LOCALES as readonly string[]).includes(language) ? (language as Locale) : DEFAULT_LOCALE;

@@ -95,4 +95,5 @@ export const queryKeys = {
     ['leaderboard', accountId, scope, period] as const,
   points: (accountId: string) => ['points', accountId] as const,
   certificates: (accountId: string) => ['certificates', accountId] as const,
+  friends: (accountId: string) => ['friends', accountId] as const,
 } as const;

@@ -14,6 +14,7 @@ import { useQuery, type UseQueryResult } from '@tanstack/react-query';
 import { z } from 'zod';
 
 import { rpc } from '../nakama/rpc';
+import { listFriends } from '../nakama/friends';
 import { config } from '../../lib/config';
 import { queryKeys } from './client';
 
@@ -87,12 +88,23 @@ const ProgressSchema = z.object({
       trend: z.enum(['up', 'flat', 'down']),
     }),
   ),
-  games: z.array(z.unknown()),
+  games: z.array(
+    z.object({
+      gameId: z.string(),
+      missionsCompleted: z.number(),
+      missionsAvailable: z.number(),
+      highestRank: z.number(),
+    }),
+  ),
   courses: z.array(z.object({ courseId: z.string(), lessonsCompleted: z.number() })),
   certificates: z.array(
     z.object({ id: z.string(), definitionId: z.string(), issuedAt: z.string() }),
   ),
-  weeklyActivity: z.array(z.unknown()),
+  // Weeks with no play are absent rather than zero — the server sends what
+  // happened, the client fills the gaps for the range it asked about.
+  weeklyActivity: z.array(
+    z.object({ date: z.string(), attempts: z.number(), minutes: z.number() }),
+  ),
 });
 
 const LeaderboardSchema = z.object({
@@ -175,6 +187,64 @@ export function useLeaderboard(
       rpc(accountId as string, 'v1.leaderboard.list', { scope, period, limit: 25 }, {
         schema: LeaderboardSchema,
       }),
+  });
+}
+
+const CertificateSchema = z.object({
+  earned: z.array(
+    z.object({
+      id: z.string(),
+      definitionId: z.string(),
+      issuedAt: z.string(),
+      // What the certificate is allowed to say about itself (PRD-RWD-013):
+      // which skills, how many validated attempts, over what period.
+      evidenceSummary: z.object({
+        nodes: z.array(z.string()),
+        attempts: z.number(),
+        periodDays: z.number(),
+      }),
+      verifiable: z.boolean(),
+      publicVerifiable: z.boolean(),
+    }),
+  ),
+  // What is left to earn, and why — so an empty tab explains itself instead
+  // of saying only "none yet".
+  progress: z.array(
+    z.object({
+      definitionId: z.string(),
+      requiredNodes: z.array(z.string()),
+      nodesRemaining: z.number(),
+      remaining: z.array(z.object({ skillNodeId: z.string(), reason: z.string() })),
+    }),
+  ),
+});
+
+export type Certificate = z.infer<typeof CertificateSchema>['earned'][number];
+export type CertificateProgress = z.infer<typeof CertificateSchema>['progress'][number];
+
+export function useCertificates(accountId: string | null) {
+  return useQuery({
+    queryKey: queryKeys.certificates(accountId ?? 'none'),
+    enabled: accountId !== null,
+    queryFn: () =>
+      rpc(accountId as string, 'v1.certificate.list', {}, { schema: CertificateSchema }),
+  });
+}
+
+/**
+ * The friend graph.
+ *
+ * Not through `rpc()`: friends are Nakama's own API, guarded by the
+ * `beforeAddFriends` hook rather than by an RPC of ours.
+ */
+export function useFriends(accountId: string | null) {
+  return useQuery({
+    queryKey: queryKeys.friends(accountId ?? 'none'),
+    enabled: accountId !== null,
+    queryFn: () => listFriends(accountId as string),
+    // Requests are the one thing here a student is waiting on, so this
+    // refreshes more eagerly than the rest.
+    staleTime: 30_000,
   });
 }
 
