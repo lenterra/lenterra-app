@@ -108,4 +108,14 @@ export const queryKeys = {
   assignments: (accountId: string) => ['assignments', accountId] as const,
   rewards: (accountId: string) => ['rewards', accountId] as const,
   friends: (accountId: string) => ['friends', accountId] as const,
+  /**
+   * What a named set of students are wearing.
+   *
+   * The ids are part of the key rather than closed over by the query function,
+   * because accepting a friend request changes the set and a key that ignored
+   * that would keep serving the previous answer — the new friend appearing in
+   * the default colour until something unrelated invalidated the cache.
+   */
+  worn: (accountId: string, userIds: readonly string[]) =>
+    ['worn', accountId, userIds.slice().sort().join(',')] as const,
 } as const;

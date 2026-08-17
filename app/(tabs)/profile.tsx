@@ -44,13 +44,15 @@ import { useQueryClient } from '@tanstack/react-query';
 import { activeAccountId, signOut } from '@/src/data/cache/storage';
 import { queryKeys } from '@/src/data/queries/client';
 import { RewardShop } from '@/src/features/rewards/RewardShop';
-import { avatarColorOf, titleKeyOf } from '@/src/features/rewards/wardrobe';
+import { RewardTitle } from '@/src/features/rewards/RewardTitle';
+import { avatarColorOf } from '@/src/features/rewards/wardrobe';
 import {
   useBootstrap,
   useCertificates,
   useFriends,
   usePoints,
   useProgress,
+  useWorn,
   type Certificate,
   type CertificateProgress,
   type Progress,
@@ -62,6 +64,7 @@ import {
   removeFriend,
   reportUser,
   type Friend,
+  type FriendLists,
 } from '@/src/data/nakama/friends';
 import { rpc } from '@/src/data/nakama/rpc';
 import { useSync } from '@/src/features/sync/SyncProvider';
@@ -144,7 +147,11 @@ export default function ProfileScreen() {
             color={avatarColorOf(accountId, profile?.equipped.avatarColor ?? null)}
           />
           <Text style={styles.name}>{profile?.displayName ?? ''}</Text>
-          <OwnTitle accountId={accountId} itemId={profile?.equipped.title ?? null} />
+          <RewardTitle
+            accountId={accountId}
+            itemId={profile?.equipped.title ?? null}
+            style={styles.ownTitle}
+          />
           {bootstrap.data?.class ? (
             <Text style={styles.className}>{bootstrap.data.class.name}</Text>
           ) : null}
@@ -460,6 +467,77 @@ function FriendsTab({ accountId }: { accountId: string | null }) {
   const lists = friends.data;
 
   return (
+    <FriendsList
+      accountId={accountId}
+      lists={lists}
+      code={code}
+      setCode={setCode}
+      lookup={lookup}
+      lookupError={lookupError}
+      subject={subject}
+      setSubject={setSubject}
+      refresh={refresh}
+    />
+  );
+}
+
+/**
+ * The rendered list, split out so the cosmetics lookup can be a hook.
+ *
+ * `FriendsTab` returns early while the graph is loading, and a hook cannot sit
+ * after a conditional return. The alternative — calling it before the guards
+ * with an empty id list and then again with a real one — would be a wasted
+ * render and a query key that changes on every load.
+ */
+function FriendsList({
+  accountId,
+  lists,
+  code,
+  setCode,
+  lookup,
+  lookupError,
+  subject,
+  setSubject,
+  refresh,
+}: {
+  accountId: string | null;
+  lists: FriendLists | undefined;
+  code: string;
+  setCode: (value: string) => void;
+  lookup: (value: string) => Promise<void>;
+  lookupError: string | null;
+  subject: Friend | null;
+  setSubject: (friend: Friend | null) => void;
+  refresh: () => void;
+}) {
+  const { t } = useTranslation();
+
+  /**
+   * Everyone shown on this screen, in one lookup.
+   *
+   * Incoming and outgoing requests are included as well as mutual friends: a
+   * request is where a student first sees somebody, and it would be odd for a
+   * classmate to arrive in the default colour and change appearance the moment
+   * the request was accepted.
+   */
+  const shown = useMemo(
+    () =>
+      lists
+        ? [...lists.friends, ...lists.incoming, ...lists.outgoing].map((friend) => friend.userId)
+        : [],
+    [lists],
+  );
+  const worn = useWorn(accountId, shown).data?.worn;
+
+  // A failed or still-loading lookup is not an error state. Cosmetics are
+  // decoration on a list that is already correct without them, so this resolves
+  // to the derived colour and the screen renders exactly as it did before.
+  const dressed = (friend: Friend) => ({
+    color: avatarColorOf(accountId, worn?.[friend.userId]?.avatarColor ?? null),
+    title: worn?.[friend.userId]?.title ?? null,
+  });
+
+  return (
     <View style={styles.section}>
       <View style={styles.card}>
         <Text style={styles.cardTitle}>{t('profile.addFriend')}</Text>
@@ -476,8 +554,16 @@ function FriendsTab({ accountId }: { accountId: string | null }) {
           <Text style={styles.cardTitle}>{t('profile.requests')}</Text>
           {lists.incoming.map((friend: Friend) => (
             <View key={friend.userId} style={styles.friendRow}>
-              <Avatar name={friend.displayName} size={36} />
-              <Text style={styles.friendName}>{friend.displayName}</Text>
+              <Avatar name={friend.displayName} size={36} color={dressed(friend).color} />
+              <View style={styles.friendIdentity}>
+                <Text style={styles.friendName}>{friend.displayName}</Text>
+                <RewardTitle
+                  accountId={accountId}
+                  itemId={dressed(friend).title}
+                  numberOfLines={1}
+                  style={styles.friendTitle}
+                />
+              </View>
               <Pressable
                 accessibilityRole="button"
                 onPress={() =>
@@ -514,8 +600,16 @@ function FriendsTab({ accountId }: { accountId: string | null }) {
               style={styles.friendRow}
               onLongPress={() => setSubject(friend)}
             >
-              <Avatar name={friend.displayName} size={36} />
-              <Text style={styles.friendName}>{friend.displayName}</Text>
+              <Avatar name={friend.displayName} size={36} color={dressed(friend).color} />
+              <View style={styles.friendIdentity}>
+                <Text style={styles.friendName}>{friend.displayName}</Text>
+                <RewardTitle
+                  accountId={accountId}
+                  itemId={dressed(friend).title}
+                  numberOfLines={1}
+                  style={styles.friendTitle}
+                />
+              </View>
               <Pressable
                 accessibilityRole="button"
                 hitSlop={8}
@@ -533,8 +627,16 @@ function FriendsTab({ accountId }: { accountId: string | null }) {
           <Text style={styles.cardTitle}>{t('profile.pending')}</Text>
           {lists.outgoing.map((friend: Friend) => (
             <View key={friend.userId} style={styles.friendRow}>
-              <Avatar name={friend.displayName} size={36} />
-              <Text style={styles.friendName}>{friend.displayName}</Text>
+              <Avatar name={friend.displayName} size={36} color={dressed(friend).color} />
+              <View style={styles.friendIdentity}>
+                <Text style={styles.friendName}>{friend.displayName}</Text>
+                <RewardTitle
+                  accountId={accountId}
+                  itemId={dressed(friend).title}
+                  numberOfLines={1}
+                  style={styles.friendTitle}
+                />
+              </View>
               <Text style={styles.muted}>{t('profile.awaitingReply')}</Text>
             </View>
           ))}
@@ -828,24 +930,6 @@ function RewardsTab({ accountId }: { accountId: string | null }) {
   );
 }
 
-/**
- * The student's own title, under their name.
- *
- * Renders nothing when there is no title, when this device's catalogue does not
- * know the id, or when the locale has no string for it. Showing `title.pemikir`
- * to the student who bought it would be worse than showing nothing.
- */
-function OwnTitle({ accountId, itemId }: { accountId: string | null; itemId: string | null }) {
-  const { t } = useTranslation();
-  const key = titleKeyOf(accountId, itemId);
-  if (!key) return null;
-
-  const label = t(key);
-  if (label === key) return null;
-
-  return <Text style={styles.ownTitle}>{label}</Text>;
-}
-
 // ---------------------------------------------------------------------------
 // Settings ---------------------------------------------------------------------------
 
@@ -1098,7 +1182,11 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     minHeight: MIN_TOUCH_TARGET,
   },
-  friendName: { ...typography.body, color: palette.ink900, flex: 1 },
+  // The name and title share the row's flexible column, so a long title
+  // wraps within it rather than squeezing the accept and decline controls.
+  friendIdentity: { flex: 1 },
+  friendName: { ...typography.body, color: palette.ink900 },
+  friendTitle: { ...typography.caption, color: palette.ink500, fontStyle: 'italic' },
   muted: { ...typography.caption, color: palette.ink500 },
   error: { ...typography.caption, color: palette.danger600 },
 

@@ -302,6 +302,52 @@ export function useFriends(accountId: string | null) {
   });
 }
 
+const WornSchema = z.object({
+  worn: z.record(
+    z.string(),
+    z.object({
+      avatarColor: z.string().nullable().default(null),
+      title: z.string().nullable().default(null),
+    }),
+  ),
+});
+
+/**
+ * What a set of students are wearing.
+ *
+ * The leaderboard gets this for free — the server builds that roster and looks
+ * the cosmetics up while it does. The friends list cannot: it comes from
+ * Nakama's own friend API, which knows nothing about our profile table. Without
+ * this hook a classmate showed their bought colour on the board and the
+ * name-derived default in the friends list, two taps apart, and a cosmetic that
+ * appears in some places and not others reads as the purchase not having
+ * worked.
+ *
+ * Missing ids are normal, not an error: the server answers only for students in
+ * the caller's own school, and a friend wearing nothing is absent for the same
+ * reason as a friend outside the scope. Every consumer falls back to the
+ * derived colour, so the two never need telling apart.
+ */
+export function useWorn(accountId: string | null, userIds: readonly string[]) {
+  return useQuery({
+    queryKey: queryKeys.worn(accountId ?? 'none', userIds),
+    // No ids means no question. Asking anyway would be a round trip to be told
+    // nothing, on a screen that opens on every visit to the profile tab.
+    enabled: accountId !== null && userIds.length > 0,
+    queryFn: () =>
+      rpc(
+        accountId as string,
+        'v1.reward.worn',
+        { userIds: userIds.slice() },
+        { schema: WornSchema },
+      ),
+    // Cosmetics change when somebody buys something, which is rare and is not
+    // worth polling for. Stale here costs a classmate's new colour appearing on
+    // the next visit rather than immediately.
+    staleTime: 5 * 60_000,
+  });
+}
+
 export function usePoints(accountId: string | null) {
   return useQuery({
     queryKey: queryKeys.points(accountId ?? 'none'),
