@@ -131,6 +131,35 @@ export type Leaderboard = z.infer<typeof LeaderboardSchema>;
 export type Progress = z.infer<typeof ProgressSchema>;
 export type Recommendation = z.infer<typeof RecommendationSchema>;
 
+const ClassGoalSchema = z.object({
+  classId: z.string().nullable(),
+  className: z.string().nullable(),
+  reached: z.number(),
+  target: z.number(),
+  progress: z.number(),
+  achieved: z.boolean(),
+  contributors: z.number(),
+  memberCount: z.number(),
+  mine: z.number(),
+});
+
+export type ClassGoal = z.infer<typeof ClassGoalSchema>;
+
+/**
+ * The class's shared goal (PRD-SOC-009).
+ *
+ * Fetched separately from the leaderboard rather than folded into it, because
+ * a teacher who switches the ranking off is switching off competition — and
+ * this is the mechanic that has to survive that.
+ */
+export function useClassGoal(accountId: string | null) {
+  return useQuery({
+    queryKey: queryKeys.classGoal(accountId ?? 'none'),
+    enabled: accountId !== null,
+    queryFn: () => rpc(accountId as string, 'v1.class.goal', {}, { schema: ClassGoalSchema }),
+  });
+}
+
 const PointsSchema = z.object({
   balance: z.number(),
   entries: z.array(z.object({ delta: z.number(), reasonKey: z.string(), at: z.string() })),

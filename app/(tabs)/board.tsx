@@ -31,7 +31,12 @@ import { StatusBar } from 'expo-status-bar';
 import { useTranslation } from 'react-i18next';
 
 import { activeAccountId } from '@/src/data/cache/storage';
-import { useLeaderboard, type LeaderboardEntry } from '@/src/data/queries/hooks';
+import {
+	useClassGoal,
+	useLeaderboard,
+	type ClassGoal,
+	type LeaderboardEntry,
+} from '@/src/data/queries/hooks';
 import { RpcError } from '@/src/data/nakama/rpc';
 import { Avatar } from '@/src/ui/components/Avatar';
 import {
@@ -56,6 +61,7 @@ export default function BoardScreen() {
 	const [scope, setScope] = useState<Scope>('class');
 	const [period, setPeriod] = useState<Period>('week');
 	const board = useLeaderboard(accountId, scope, period);
+	const goal = useClassGoal(accountId);
 
 	const entries: LeaderboardEntry[] = board.data?.entries ?? [];
 	const podium = useMemo(() => entries.slice(0, 3), [entries]);
@@ -66,6 +72,12 @@ export default function BoardScreen() {
 	if (board.error instanceof RpcError && board.error.code === 'FORBIDDEN') {
 		return (
 			<SafeAreaView style={styles.container}>
+				{/*
+					The ranking is off; the shared goal is not. A teacher switching
+					competition off should not also switch off the one mechanic where
+					a stronger student gains from a weaker one improving.
+				*/}
+				<ClassGoalCard goal={goal.data ?? null} />
 				<EmptyState title={t('board.title')} body={t('board.disabled')} />
 			</SafeAreaView>
 		);
@@ -115,6 +127,8 @@ export default function BoardScreen() {
 						</Text>
 					) : null}
 				</View>
+
+				<ClassGoalCard goal={goal.data ?? null} />
 
 				<View style={styles.filters}>
 					<Segmented
@@ -220,7 +234,84 @@ function Segmented<T extends string>({
 	);
 }
 
+/**
+ * The class's shared goal (PRD-SOC-009).
+ *
+ * The only thing on this screen that is not a ranking. Everything else here is
+ * zero-sum — helping a classmate can only cost you position — and this is the
+ * counterweight: a class total that moves when *anyone* reaches Proficient on a
+ * skill they had not before.
+ *
+ * It counts skills rather than missions on purpose. Missions are what a strong
+ * student can farm alone by replaying ones they have already beaten, which
+ * would complete the goal without anybody else's learning moving at all.
+ */
+function ClassGoalCard({ goal }: { goal: ClassGoal | null }) {
+	const { t } = useTranslation();
+	if (!goal || goal.classId === null) return null;
+
+	const percent = Math.round(goal.progress * 100);
+
+	return (
+		<View style={styles.goalCard}>
+			<Text style={styles.goalLabel}>{t('board.classGoal')}</Text>
+			<Text style={styles.goalHeadline}>
+				{t('board.classGoalCount', { reached: goal.reached, target: goal.target })}
+			</Text>
+
+			<View
+				accessibilityRole="progressbar"
+				accessibilityLabel={t('board.classGoalCount', {
+					reached: goal.reached,
+					target: goal.target,
+				})}
+				accessibilityValue={{ min: 0, max: goal.target, now: goal.reached }}
+				style={styles.goalTrack}
+			>
+				<View style={[styles.goalFill, { width: `${percent}%` }]} />
+			</View>
+
+			{/*
+				Contributors alongside the total, because the two together say
+				something neither says alone: "40 of 90, from 11 of 30 students" is
+				a sentence a teacher can act on, and a bare total is not.
+			*/}
+			<Text style={styles.goalMeta}>
+				{t('board.classGoalContributors', {
+					contributors: goal.contributors,
+					members: goal.memberCount,
+				})}
+			</Text>
+
+			<Text style={styles.goalMine}>{t('board.classGoalMine', { count: goal.mine })}</Text>
+
+			{goal.achieved ? <Text style={styles.goalDone}>{t('board.classGoalDone')}</Text> : null}
+		</View>
+	);
+}
+
 const styles = StyleSheet.create({
+	goalCard: {
+		backgroundColor: palette.success100,
+		borderRadius: radius.lg,
+		padding: spacing.lg,
+		margin: spacing.lg,
+		marginBottom: 0,
+		gap: spacing.xs,
+	},
+	goalLabel: { ...typography.caption, color: palette.success600, fontWeight: '700' },
+	goalHeadline: { ...typography.heading, color: palette.ink900 },
+	goalTrack: {
+		height: 8,
+		borderRadius: radius.pill,
+		backgroundColor: palette.surface,
+		marginVertical: spacing.xs,
+	},
+	goalFill: { height: 8, borderRadius: radius.pill, backgroundColor: palette.success600 },
+	goalMeta: { ...typography.caption, color: palette.ink700 },
+	goalMine: { ...typography.caption, color: palette.ink500 },
+	goalDone: { ...typography.label, color: palette.success600 },
+
 	filters: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md },
 	segmented: {
 		flex: 1,

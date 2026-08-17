@@ -176,7 +176,12 @@
     "period": {
       "week": "This week",
       "all": "All time"
-    }
+    },
+    "classGoal": "Class goal",
+    "classGoalCount": "{{reached}} of {{target}} skills at proficient",
+    "classGoalContributors": "From {{contributors}} students, of {{members}} in the class",
+    "classGoalMine": "You contributed {{count}}",
+    "classGoalDone": "The class reached its goal!"
   },
   "courses": {
     "title": "Courses",

@@ -176,7 +176,12 @@
     "period": {
       "week": "Minggu ini",
       "all": "Sepanjang waktu"
-    }
+    },
+    "classGoal": "Target bersama kelas",
+    "classGoalCount": "{{reached}} dari {{target}} kemampuan sudah mahir",
+    "classGoalContributors": "Sumbangan dari {{contributors}} siswa, dari {{members}} di kelas",
+    "classGoalMine": "Kamu menyumbang {{count}}",
+    "classGoalDone": "Target kelas tercapai!"
   },
   "courses": {
     "title": "Materi",
