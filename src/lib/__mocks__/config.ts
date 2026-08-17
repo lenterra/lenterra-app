@@ -1,13 +1,11 @@
 /**
  * Configuration, for tests.
  *
- * The real module reads `EXPO_PUBLIC_*` variables and throws at import when any
- * required one is missing. That is the right behaviour — a build shipped
- * without a server address should fail immediately rather than reach a login
- * screen and fail per request — but it makes the module unimportable in a unit
- * test.
+ * The real module defaults every value to production, which is right for a
+ * build and wrong for a test: a unit test that quietly resolved
+ * lenterra-api.faizath.com would be a unit test that talks to a real server.
  *
- * Setting the variables does not help: Expo's Babel preset inlines
+ * Setting the variables does not help either: Expo's Babel preset inlines
  * `EXPO_PUBLIC_*` reads as literals at transform time, so a value assigned at
  * runtime is never seen. A manual mock is the honest way round it.
  *
