@@ -266,7 +266,9 @@
     "deleteAccount": "Hapus akun saya",
     "deleteAccountBody": "Ini menghapus akunmu dan semua yang sudah kamu kerjakan. Berlaku dalam 30 hari, dan kamu bisa membatalkannya sebelum itu.",
     "deleteScheduledTitle": "Penghapusan dijadwalkan",
-    "deleteScheduledBody": "Akunmu akan dihapus dalam 30 hari. Beri tahu gurumu kalau kamu berubah pikiran."
+    "deleteScheduledBody": "Akunmu akan dihapus dalam 30 hari. Beri tahu gurumu kalau kamu berubah pikiran.",
+    "addEmail": "Tambahkan email",
+    "addEmailBody": "Dengan email, kamu bisa masuk lagi kalau ponsel ini tidak ada, dan sertifikatmu punya tempat untuk diterbitkan. Kemajuanmu tetap sama."
   },
   "sync": {
     "pendingCount": "{{count}} menunggu terkirim",

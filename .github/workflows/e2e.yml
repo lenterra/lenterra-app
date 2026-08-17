@@ -8,15 +8,15 @@
 # this is the flow somebody wants to run after touching sync, the catalog, or
 # the play surface, without cutting a release to find out.
 #
-# **It cannot run unattended yet**, and the reason is worth stating plainly
-# rather than discovering from a red build. Signing in requires a one-time code
-# delivered to a mailbox, and nothing here reads that mailbox. The alternatives
-# are both worse than the gap: a fixed test code would be a fixed code in a
-# login path children also use, and a bypass flag would be a bypass flag
-# shipped in the same binary. Closing this properly means either the
-# class-code path landing (30-03 OQ-04), which needs no mailbox, or a staging
-# mail API the runner can read. Until then the flow is run with a code supplied
-# by hand.
+# It runs unattended, which it could not do while the flow signed in by email:
+# that needed a one-time code from a mailbox nothing here can read, so somebody
+# had to supply one by hand for every run. The class-code path removed the
+# mailbox rather than working around it — no bypass flag in a binary children
+# also install, and no fixed test code in a login path they also use.
+#
+# The class code is a workflow input with a secret fallback, so an on-demand run
+# can point at a class somebody just made. It admits its holder to one synthetic
+# class of synthetic students and nothing else.
 
 name: e2e
 
@@ -25,9 +25,9 @@ on:
     tags: ['v*']
   workflow_dispatch:
     inputs:
-      student_email:
-        description: Staging account the test student signs in with
-        required: true
+      class_code:
+        description: Join code for the synthetic staging class
+        required: false
       nakama_host:
         description: Nakama host the build should point at
         required: true
@@ -49,10 +49,7 @@ jobs:
       EXPO_PUBLIC_NAKAMA_HOST: ${{ inputs.nakama_host || secrets.NAKAMA_HOST }}
       EXPO_PUBLIC_NAKAMA_SERVER_KEY: ${{ secrets.NAKAMA_SERVER_KEY }}
       EXPO_PUBLIC_VERIFIER_URL: ${{ secrets.VERIFIER_URL }}
-      MAESTRO_STUDENT_EMAIL: ${{ inputs.student_email || secrets.E2E_STUDENT_EMAIL }}
-      # Supplied by hand for now. See the header for why neither a fixed code
-      # nor a sign-in bypass is an acceptable substitute.
-      MAESTRO_OTP: ${{ secrets.E2E_OTP }}
+      MAESTRO_CLASS_CODE: ${{ inputs.class_code || secrets.E2E_CLASS_CODE }}
 
     steps:
       - uses: actions/checkout@v4

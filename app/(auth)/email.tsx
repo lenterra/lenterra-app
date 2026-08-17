@@ -1,12 +1,19 @@
 /**
- * Email sign-in.
+ * Email sign-in, and the same two steps used to add an email to an account that
+ * has none.
  *
  * Two steps, because the second needs the code the student read off their own
  * phone. No password: a password is one more thing to lose on a shared device,
  * and a one-time code is what the audience already knows from banking SMS.
+ *
+ * `?upgrade=1` is the class-code student adding an email to the account they
+ * already have. The screen is identical because the student's experience is
+ * identical; what differs is that the second step attaches the address to the
+ * signed-in account rather than creating one, and never forks them into a
+ * second account with none of their history.
  */
 
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import {
 	ActivityIndicator,
@@ -18,12 +25,20 @@ import {
 } from "react-native";
 import { useTranslation } from "react-i18next";
 
-import { AuthError, sendEmailCode, signIn } from "@/src/features/onboarding/auth";
+import { activeAccountId } from "@/src/data/cache/storage";
+import {
+	AuthError,
+	sendEmailCode,
+	signIn,
+	upgradeAccount,
+} from "@/src/features/onboarding/auth";
 import { MIN_TOUCH_TARGET, palette, radius, spacing, typography } from "@/src/ui/tokens";
 
 export default function EmailScreen() {
 	const { t } = useTranslation();
 	const router = useRouter();
+	const { upgrade } = useLocalSearchParams<{ upgrade?: string }>();
+	const isUpgrade = upgrade === "1";
 	const [email, setEmail] = useState("");
 	const [code, setCode] = useState("");
 	const [sent, setSent] = useState(false);
@@ -47,7 +62,13 @@ export default function EmailScreen() {
 		setBusy(true);
 		setError(null);
 		try {
-			await signIn("email", email.trim());
+			if (isUpgrade) {
+				const accountId = activeAccountId();
+				if (!accountId) throw new AuthError("unknown", "No signed-in account to upgrade");
+				await upgradeAccount(accountId, "email", email.trim());
+			} else {
+				await signIn("email", email.trim());
+			}
 			router.replace("/(tabs)");
 		} catch (err) {
 			setError(
@@ -62,7 +83,7 @@ export default function EmailScreen() {
 
 	return (
 		<View testID="email-screen" style={styles.screen}>
-			<Text style={styles.title}>{t("auth.signInEmail")}</Text>
+			<Text style={styles.title}>{t(isUpgrade ? "profile.addEmail" : "auth.signInEmail")}</Text>
 
 			<TextInput
 				testID="email-input"

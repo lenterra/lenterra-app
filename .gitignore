@@ -31,3 +31,7 @@ credentials.json
 public/.well-known/apple-app-site-association
 public/.well-known/assetlinks.json
 eas-android.md
+# Jest writes this on every `test:ci` run. A generated report in the history
+# turns a one-line source change into a thousand-line diff, and the numbers in
+# it are stale the moment they are committed — the gate in CI is the record.
+coverage/

@@ -38,6 +38,7 @@ import {
   View,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { useRouter } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 
 import { activeAccountId, signOut } from '@/src/data/cache/storage';
@@ -727,6 +728,7 @@ function CertificateCard({ certificate }: { certificate: Certificate }) {
 
 function Settings({ accountId }: { accountId: string | null }) {
   const { t, i18n } = useTranslation();
+  const router = useRouter();
   const sync = useSync();
   const bootstrap = useBootstrap(accountId);
 
@@ -773,6 +775,25 @@ function Settings({ accountId }: { accountId: string | null }) {
     void i18n.changeLanguage(i18n.language === 'id' ? 'en' : 'id');
   };
 
+  /**
+   * Offer an email to a student who joined with a class code.
+   *
+   * Two things they cannot do without one, and both are worth saying plainly
+   * rather than burying in a settings row: they cannot get back in if the phone
+   * they borrowed goes away, and a certificate has to be issued to an address
+   * they do not have yet.
+   *
+   * It routes to the existing email screen rather than repeating its two-step
+   * code entry here. That screen knows the account is already signed in, so it
+   * upgrades instead of creating anything.
+   */
+  const startUpgrade = () => {
+    Alert.alert(t('profile.addEmail'), t('profile.addEmailBody'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('common.continue'), onPress: () => router.push('/(auth)/email?upgrade=1') },
+    ]);
+  };
+
   return (
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>{t('profile.settings')}</Text>
@@ -780,6 +801,9 @@ function Settings({ accountId }: { accountId: string | null }) {
       <Row label={t('profile.language')} value={i18n.language === 'id' ? 'Bahasa Indonesia' : 'English'} onPress={toggleLanguage} />
       {bootstrap.data?.class ? (
         <Row label={t('profile.class')} value={bootstrap.data.class.name} />
+      ) : null}
+      {bootstrap.data?.profile.hasWallet === false ? (
+        <Row testID="profile-add-email" label={t('profile.addEmail')} onPress={startUpgrade} />
       ) : null}
       <Row label={t('profile.signOut')} onPress={confirmSignOut} />
       <Row label={t('profile.deleteAccount')} onPress={requestDeletion} danger />
@@ -792,14 +816,17 @@ function Row({
   value,
   onPress,
   danger = false,
+  testID,
 }: {
   label: string;
   value?: string;
   onPress?: () => void;
   danger?: boolean;
+  testID?: string;
 }) {
   return (
     <Pressable
+      testID={testID}
       accessibilityRole={onPress ? 'button' : 'text'}
       disabled={!onPress}
       onPress={onPress}

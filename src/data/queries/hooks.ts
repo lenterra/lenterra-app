@@ -33,6 +33,9 @@ const BootstrapSchema = z.object({
     locale: z.string(),
     schoolId: z.string().nullable(),
     onboarded: z.boolean(),
+    authStrategy: z.string(),
+    /** False for a class-code account that has not added an email yet. */
+    hasWallet: z.boolean(),
   }),
   class: z
     .object({ id: z.string(), name: z.string(), leaderboardEnabled: z.boolean() })

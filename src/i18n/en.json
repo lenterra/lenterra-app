@@ -266,7 +266,9 @@
     "deleteAccount": "Delete my account",
     "deleteAccountBody": "This removes your account and everything you have done. It takes effect in 30 days, and you can cancel before then.",
     "deleteScheduledTitle": "Deletion scheduled",
-    "deleteScheduledBody": "Your account will be deleted in 30 days. Tell your teacher if you change your mind."
+    "deleteScheduledBody": "Your account will be deleted in 30 days. Tell your teacher if you change your mind.",
+    "addEmail": "Add an email",
+    "addEmailBody": "With an email you can sign in again if this phone is gone, and your certificate has somewhere to be issued. Your progress stays exactly as it is."
   },
   "sync": {
     "pendingCount": "{{count}} waiting to send",

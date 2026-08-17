@@ -6,18 +6,14 @@
 # passes, the central promise holds. If it fails, a green unit suite means very
 # little: it would mean a product that quietly discards a fortnight of work.
 #
-# **One deviation from the specified flow, stated rather than hidden.** 20-16
-# writes the first leg as "join with class code". That path is a stub today —
-# `app/(auth)/join.tsx` says so on screen — because provisioning a class-code
-# account depends on a thirdweb capability nobody has verified against a live
-# integration (30-03 OQ-04). So this signs in by email instead, which is the
-# path that exists. When class-code join lands, the first leg here changes and
-# nothing after it does.
+# The first leg is class-code join, which is also the leg that lets this run
+# unattended. It needs no mailbox, no one-time code, and no third-party sign-in
+# — which is the same reason it exists for students: a borrowed phone and a code
+# on the board is the whole of what a student has.
 #
-# The email leg needs a staging account whose one-time code the runner can read,
-# supplied as MAESTRO_OTP. Without it the flow cannot run unattended, and that
-# is a genuine gap rather than something to paper over with a fixed test code
-# baked into a login path children also use.
+# A staging class code is not a credential. It admits its holder to one
+# synthetic class containing synthetic students, which is exactly what this test
+# needs and nothing else.
 #
 # Run: maestro test .maestro/offline-loop.yaml
 
@@ -27,8 +23,7 @@ tags:
   - release-candidate
 
 env:
-  STUDENT_EMAIL: ${MAESTRO_STUDENT_EMAIL}
-  OTP: ${MAESTRO_OTP}
+  CLASS_CODE: ${MAESTRO_CLASS_CODE}
   STUDENT_NAME: Uji Coba
 
 ---
@@ -36,27 +31,31 @@ env:
     clearState: true
     clearKeychain: true
 
-# --- sign in ---------------------------------------------------------------
+# --- sign in with a class code ---------------------------------------------
 - assertVisible:
     id: 'welcome-screen'
 - tapOn:
-    id: 'sign-in-email'
+    id: 'join-with-class-code'
 
+- assertVisible:
+    id: 'join-screen'
 - tapOn:
-    id: 'email-input'
-- inputText: ${STUDENT_EMAIL}
+    id: 'join-code-input'
+- inputText: ${CLASS_CODE}
 - tapOn:
-    id: 'email-submit'
+    id: 'join-submit'
 
-- extendedWaitUntil:
-    visible:
-      id: 'otp-input'
-    timeout: 30000
-- tapOn:
-    id: 'otp-input'
-- inputText: ${OTP}
-- tapOn:
-    id: 'email-submit'
+# A fresh install joining a class that already holds synthetic students is
+# offered their masked profiles. Declining is the correct answer here: the run
+# is a new student, and picking one would file a reclaim request against a
+# profile this test does not own.
+- runFlow:
+    when:
+      visible:
+        id: 'recognize-screen'
+    commands:
+      - tapOn:
+          id: 'recognize-skip'
 
 - extendedWaitUntil:
     visible:
