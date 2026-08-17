@@ -14,7 +14,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
-	AppState,
 	Pressable,
 	SafeAreaView,
 	ScrollView,

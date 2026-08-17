@@ -57,6 +57,13 @@ export default function CoursesScreen() {
 
   const courses = useMemo<CourseSummary[]>(
     () => (accountId ? allCourses(accountId) : []),
+    // `sync.catalogProgress` is the trigger, not a value read here: the
+    // catalogue is read from disk, and a finished download changes what is on
+    // disk without changing anything React can see. Dropping it — which is what
+    // the exhaustive-deps rule suggests, since it appears in no expression
+    // above — would leave a student staring at the list they had before the
+    // content arrived.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [accountId, sync.catalogProgress],
   );
 

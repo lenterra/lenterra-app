@@ -64,7 +64,13 @@ export default function BoardScreen() {
 	const board = useLeaderboard(accountId, scope, period);
 	const goal = useClassGoal(accountId);
 
-	const entries: LeaderboardEntry[] = board.data?.entries ?? [];
+	// Memoised because the fallback is a fresh array each render, which would
+	// defeat both memos below it — the podium and the rest of the table would be
+	// rebuilt on every keystroke elsewhere on the screen.
+	const entries: LeaderboardEntry[] = useMemo(
+		() => board.data?.entries ?? [],
+		[board.data?.entries],
+	);
 	const podium = useMemo(() => entries.slice(0, 3), [entries]);
 	const rest = useMemo(() => entries.slice(3), [entries]);
 

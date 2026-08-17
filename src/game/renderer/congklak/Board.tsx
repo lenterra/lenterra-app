@@ -17,7 +17,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import type { CongklakState } from '@lenterra/core';
-import { pitsPerSide, rowOf, storeOf } from '@lenterra/core';
+import { rowOf, storeOf } from '@lenterra/core';
 
 import { MIN_TOUCH_TARGET, palette, radius, spacing, typography } from '@/src/ui/tokens';
 import { skinFor } from '../skins';
@@ -52,7 +52,6 @@ export function CongklakBoard({
   const { t } = useTranslation();
   const paint = skinFor('congklak', skin);
 
-  const n = pitsPerSide(state);
   const playerStore = storeOf(state, state.playerSide);
   const opponentStore = storeOf(state, state.playerSide === 1 ? 2 : 1);
 
@@ -64,14 +63,14 @@ export function CongklakBoard({
     const indices: number[] = [];
     for (let i = row.to; i >= row.from; i--) indices.push(i);
     return indices;
-  }, [state, n]);
+  }, [state]);
 
   const playerRow = useMemo(() => {
     const row = rowOf(state, state.playerSide);
     const indices: number[] = [];
     for (let i = row.from; i <= row.to; i++) indices.push(i);
     return indices;
-  }, [state, n]);
+  }, [state]);
 
   return (
     <View style={[styles.board, { backgroundColor: paint.board }]}>

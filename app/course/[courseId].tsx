@@ -7,7 +7,6 @@
  * nobody computed.
  */
 
-import { useMemo } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -32,10 +31,7 @@ export default function CourseScreen() {
   const accountId = activeAccountId();
 
   const found = accountId && courseId ? findCourse(accountId, courseId) : null;
-  const done = useMemo(
-    () => (accountId && courseId ? completedLessons(accountId, courseId) : []),
-    [accountId, courseId],
-  );
+  const done = accountId && courseId ? completedLessons(accountId, courseId) : [];
 
   if (!accountId || !found) {
     return (

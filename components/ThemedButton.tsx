@@ -31,7 +31,7 @@ export function ThemedButton(props: ThemedButtonProps) {
 		{ light: props.lightColor, dark: props.darkColor },
 		"text",
 	);
-	const textColor = variant == "secondary" ? text : textInverted;
+	const textColor = variant === "secondary" ? text : textInverted;
 	return (
 		<TouchableOpacity
 			disabled={props.loading}
@@ -39,9 +39,9 @@ export function ThemedButton(props: ThemedButtonProps) {
 			style={[
 				styles.button,
 				{
-					borderColor: variant == "secondary" ? bg : "transparent",
-					borderWidth: variant == "secondary" ? 1 : 0,
-					backgroundColor: variant == "secondary" ? "transparent" : bg,
+					borderColor: variant === "secondary" ? bg : "transparent",
+					borderWidth: variant === "secondary" ? 1 : 0,
+					backgroundColor: variant === "secondary" ? "transparent" : bg,
 				},
 			]}
 			onPress={(e) => {

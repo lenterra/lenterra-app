@@ -16,31 +16,18 @@ module.exports = {
     // app's build graph. Linting it reports problems in code nothing runs.
     'lenterra/',
   ],
-  rules: {
-    // The React Compiler rules, new in eslint-plugin-react-hooks 7 and shipped
-    // as errors by eslint-config-expo 57. They fire on four pre-existing
-    // effects — the session bootstrap, the play session's resume, and the sync
-    // engine's startup drain — and they are pointing at something real:
-    // `setState` synchronously inside an effect does cause a cascading render.
-    //
-    // Warnings rather than errors, deliberately and temporarily. Each of those
-    // effects coordinates React state with a native module or a persisted
-    // outbox, and the correct fix changes when work happens on mount. Whether
-    // that is safe is a question about a device — an attempt queued offline
-    // must still survive — and no device is available here. Turning them off
-    // would hide the finding; leaving them as errors would mean either a red
-    // lint run forever or a rushed change to the code path that decides
-    // whether a student's offline work is kept.
-    //
-    // They are the first thing to work through the next time this app is run
-    // on hardware.
-    'react-hooks/set-state-in-effect': 'warn',
-    'react-hooks/incompatible-library': 'warn',
-    // Emitted where the compiler bails out of memoising a component it cannot
-    // prove safe. Informational: the component still works, it is simply not
-    // optimised.
-    'react-hooks/preserve-manual-memoization': 'warn',
-  },
+  // The React Compiler rules, new in eslint-plugin-react-hooks 7 and shipped as
+  // errors by eslint-config-expo 57, are left at their defaults. They fired on
+  // three effects — the session gate, the play session's resume, and the sync
+  // engine's startup drain — and were downgraded to warnings while there was no
+  // device to check the fix against.
+  //
+  // All three are now resolved by computing state during render instead of
+  // correcting it afterwards, which is both what the rule asks for and what the
+  // screens wanted: no frame of "loading" over a question already answered, no
+  // board mounting empty before a resumed game appears in it, no pending count
+  // reading zero for a student who has work waiting. The rules are back at
+  // error so the next one is dealt with rather than accumulated.
 
   overrides: [
     {

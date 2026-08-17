@@ -58,6 +58,10 @@ export default function GamesScreen() {
 	// moves last, so a completed pull is exactly when this stops being null.
 	const catalogVersion = useMemo(
 		() => (accountId ? currentCatalogVersion(accountId) : null),
+		// The trigger, not a value read above — which is why exhaustive-deps calls
+		// it unnecessary and why removing it would strand this on the version the
+		// device had before the download.
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 		[accountId, sync.catalogProgress],
 	);
 
