@@ -93,6 +93,14 @@ export const queryKeys = {
   catalogManifest: (accountId: string) => ['catalog', 'manifest', accountId] as const,
   leaderboard: (accountId: string, scope: string, period: string) =>
     ['leaderboard', accountId, scope, period] as const,
+  /**
+   * Prefix matching every scope and period, for invalidation.
+   *
+   * Putting a cosmetic on changes how this student appears on all four boards
+   * at once, and invalidating only the one on screen would leave the other
+   * three showing the old colour until they happened to refetch.
+   */
+  leaderboards: (accountId: string) => ['leaderboard', accountId] as const,
   classGoal: (accountId: string) => ['class-goal', accountId] as const,
   points: (accountId: string) => ['points', accountId] as const,
   certificates: (accountId: string) => ['certificates', accountId] as const,

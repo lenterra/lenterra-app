@@ -20,6 +20,7 @@ import type { CongklakState } from '@lenterra/core';
 import { pitsPerSide, rowOf, storeOf } from '@lenterra/core';
 
 import { MIN_TOUCH_TARGET, palette, radius, spacing, typography } from '@/src/ui/tokens';
+import { skinFor } from '../skins';
 
 export interface CongklakBoardProps {
   state: CongklakState;
@@ -29,6 +30,15 @@ export interface CongklakBoardProps {
   disabled?: boolean;
   /** Highlighted while an animation is passing through it. */
   activePit?: number | null;
+  /**
+   * A board skin the student has equipped, e.g. `congklak.kayu`.
+   *
+   * Repaints surfaces only. The legal-move and active borders are deliberately
+   * left alone by every skin — they carry meaning no colour duplicates, and a
+   * board where a playable pit is indistinguishable from an empty one would be
+   * a cosmetic that changes play.
+   */
+  skin?: string | null;
 }
 
 export function CongklakBoard({
@@ -37,8 +47,10 @@ export function CongklakBoard({
   legalPits,
   disabled = false,
   activePit = null,
+  skin = null,
 }: CongklakBoardProps) {
   const { t } = useTranslation();
+  const paint = skinFor('congklak', skin);
 
   const n = pitsPerSide(state);
   const playerStore = storeOf(state, state.playerSide);
@@ -62,7 +74,7 @@ export function CongklakBoard({
   }, [state, n]);
 
   return (
-    <View style={styles.board}>
+    <View style={[styles.board, { backgroundColor: paint.board }]}>
       <View style={styles.rowArea}>
         {opponentRow.map((index) => (
           <Pit
@@ -71,6 +83,7 @@ export function CongklakBoard({
             seeds={state.pits[index] ?? 0}
             active={activePit === index}
             side="opponent"
+            fill={paint.opponent}
           />
         ))}
       </View>
@@ -79,10 +92,14 @@ export function CongklakBoard({
         <Store
           seeds={state.pits[opponentStore] ?? 0}
           label={t('congklak.store')}
-          side="opponent"
+          fill={paint.opponent}
         />
         <View style={styles.spacer} />
-        <Store seeds={state.pits[playerStore] ?? 0} label={t('congklak.store')} side="player" />
+        <Store
+          seeds={state.pits[playerStore] ?? 0}
+          label={t('congklak.store')}
+          fill={paint.accent}
+        />
       </View>
 
       <View style={styles.rowArea}>
@@ -100,6 +117,7 @@ export function CongklakBoard({
               active={activePit === index}
               side="player"
               legal={legal}
+              fill={paint.own}
               testID={legalIndex >= 0 ? `legal-move-${legalIndex}` : undefined}
               onPress={legal && !disabled ? () => onPitPress(index) : undefined}
             />
@@ -118,6 +136,7 @@ function Pit({
   testID,
   active = false,
   onPress,
+  fill,
 }: {
   index: number;
   seeds: number;
@@ -126,6 +145,7 @@ function Pit({
   testID?: string;
   active?: boolean;
   onPress?: () => void;
+  fill: string;
 }) {
   const { t } = useTranslation();
 
@@ -141,7 +161,9 @@ function Pit({
       onPress={onPress}
       style={[
         styles.pit,
-        side === 'opponent' && styles.pitOpponent,
+        { backgroundColor: fill },
+        // After the fill, never before: legality and activity are the two things
+        // a skin must not be able to repaint away.
         legal && styles.pitLegal,
         active && styles.pitActive,
       ]}
@@ -154,17 +176,17 @@ function Pit({
 function Store({
   seeds,
   label,
-  side,
+  fill,
 }: {
   seeds: number;
   label: string;
-  side: 'player' | 'opponent';
+  fill: string;
 }) {
   return (
     <View
       accessible
       accessibilityLabel={`${label}: ${seeds}`}
-      style={[styles.store, side === 'opponent' && styles.storeOpponent]}
+      style={[styles.store, { backgroundColor: fill }]}
     >
       <Text style={styles.storeCount}>{seeds}</Text>
       <Text style={styles.storeLabel}>{label}</Text>
@@ -174,7 +196,6 @@ function Store({
 
 const styles = StyleSheet.create({
   board: {
-    backgroundColor: palette.surface,
     borderRadius: radius.lg,
     padding: spacing.md,
     gap: spacing.sm,
@@ -188,13 +209,11 @@ const styles = StyleSheet.create({
     minWidth: MIN_TOUCH_TARGET,
     minHeight: MIN_TOUCH_TARGET,
     borderRadius: radius.pill,
-    backgroundColor: palette.blue050,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
     borderColor: 'transparent',
   },
-  pitOpponent: { backgroundColor: palette.ink100 },
   // A playable pit is marked by a border as well as a fill, so the affordance
   // survives a colour-blind student and a washed-out panel in daylight.
   pitLegal: { borderColor: palette.blue600 },
@@ -205,12 +224,10 @@ const styles = StyleSheet.create({
     minWidth: MIN_TOUCH_TARGET + spacing.lg,
     minHeight: MIN_TOUCH_TARGET + spacing.lg,
     borderRadius: radius.lg,
-    backgroundColor: palette.blue100,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: spacing.sm,
   },
-  storeOpponent: { backgroundColor: palette.ink100 },
   storeCount: { ...typography.display, color: palette.ink900 },
   storeLabel: { ...typography.caption, color: palette.ink500 },
 });

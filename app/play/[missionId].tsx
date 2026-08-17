@@ -29,7 +29,9 @@ import type { BentengState, CongklakMove, CongklakState, Mission } from '@lenter
 
 import { activeAccountId } from '@/src/data/cache/storage';
 import { currentCatalogVersion, findMission } from '@/src/data/cache/catalog';
+import { useBootstrap } from '@/src/data/queries/hooks';
 import { usePlaySession, type PlayResult } from '@/src/features/play/usePlaySession';
+import { boardSkinOf } from '@/src/features/rewards/wardrobe';
 import { BentengBoard } from '@/src/game/renderer/benteng/Board';
 import { CongklakBoard } from '@/src/game/renderer/congklak/Board';
 import { EmptyState } from '@/src/ui/components/ScreenState';
@@ -49,6 +51,12 @@ export default function PlayScreen() {
 
 	const found = accountId && missionId ? findMission(accountId, missionId) : null;
 	const catalogVersion = accountId ? currentCatalogVersion(accountId) : null;
+
+	// Read from the cached bootstrap rather than fetched here: the board must
+	// draw at the same moment offline as online, and a skin that arrives a
+	// second late would repaint the board under a student mid-move.
+	const bootstrap = useBootstrap(accountId);
+	const equippedSkin = bootstrap.data?.profile.equipped.boardSkin ?? null;
 
 	const [result, setResult] = useState<PlayResult | null>(null);
 	// Null until the student has chosen. Hot-seat is never assumed: a mission
@@ -91,6 +99,7 @@ export default function PlayScreen() {
 			mission={found.mission}
 			catalogVersion={found.catalogVersion}
 			twoPlayer={mode === 'hotseat'}
+			equippedSkin={equippedSkin}
 			result={result}
 			onFinished={onFinished}
 			onLeave={() => router.back()}
@@ -157,6 +166,7 @@ function PlaySurface({
 	mission,
 	catalogVersion,
 	twoPlayer,
+	equippedSkin,
 	result,
 	onFinished,
 	onLeave,
@@ -165,6 +175,8 @@ function PlaySurface({
 	mission: Mission;
 	catalogVersion: string;
 	twoPlayer: boolean;
+	/** Settled before play begins, so the board cannot repaint mid-move. */
+	equippedSkin: string | null;
 	result: PlayResult | null;
 	onFinished: (result: PlayResult) => void;
 	onLeave: () => void;
@@ -260,6 +272,7 @@ function PlaySurface({
 					}}
 					legalTargets={session.legalMoves as { unitId: string; x: number; y: number }[]}
 					disabled={session.animating || session.seatToMove === 'machine'}
+					skin={boardSkinOf(accountId, equippedSkin, 'benteng')}
 				/>
 			) : (
 				<CongklakBoard
@@ -269,6 +282,7 @@ function PlaySurface({
 						.map((move) => move.pit)}
 					disabled={session.animating || session.seatToMove === 'machine'}
 					onPitPress={(pit) => session.play({ kind: 'sow', pit })}
+					skin={boardSkinOf(accountId, equippedSkin, 'congklak')}
 				/>
 			)}
 

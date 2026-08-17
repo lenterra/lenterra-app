@@ -34,12 +34,15 @@ export function RewardShop({
   accountId,
   balance,
   owned,
+  equipped,
   onRedeemed,
 }: {
   accountId: string | null;
   balance: number;
   /** Item ids already redeemed, so nothing is offered twice. */
   owned: string[];
+  /** What is currently on, per slot, so an owned item can say which it is. */
+  equipped: { avatarColor: string | null; boardSkin: string | null; title: string | null };
   onRedeemed: () => void;
 }) {
   const { t } = useTranslation();
@@ -50,6 +53,14 @@ export function RewardShop({
 
   const ownedSet = useMemo(() => new Set(owned), [owned]);
   const items: RewardItem[] = rewards.data ?? [];
+
+  /** The item currently filling the slot this item belongs to. */
+  const wearing = (item: RewardItem): string | null =>
+    item.kind === 'avatar_color'
+      ? equipped.avatarColor
+      : item.kind === 'board_skin'
+        ? equipped.boardSkin
+        : equipped.title;
 
   if (items.length === 0) {
     // No catalogue on this device yet. Said plainly rather than shown as an
@@ -83,12 +94,44 @@ export function RewardShop({
     }
   }
 
+  /**
+   * Put an owned item on, or take it off by passing null.
+   *
+   * Separate from `redeem` and deliberately cheap: switching between two owned
+   * colours costs nothing, so a student who owns four is choosing rather than
+   * spending. Buying does not equip either — having the fourth colour forced on
+   * the moment it is bought takes the choice away at the exact moment it is
+   * most wanted.
+   */
+  async function equip(item: RewardItem, on: boolean) {
+    if (!accountId) return;
+    setBusy(item.id);
+    setError(null);
+    try {
+      await rpc(accountId, 'v1.reward.equip', {
+        kind: item.kind,
+        itemId: on ? item.id : null,
+      });
+      // The bootstrap carries what is worn, and the board carries what
+      // classmates are wearing. Both have to be re-read or the change appears
+      // on this screen and nowhere else.
+      void queryClient.invalidateQueries({ queryKey: queryKeys.bootstrap(accountId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.leaderboards(accountId) });
+      onRedeemed();
+    } catch {
+      setError(t('error.generic'));
+    } finally {
+      setBusy(null);
+    }
+  }
+
   return (
     <View style={styles.section}>
       <Text style={styles.balance}>{t('rewards.balance', { points: balance })}</Text>
 
       {items.map((item) => {
         const isOwned = ownedSet.has(item.id);
+        const isWorn = wearing(item) === item.id;
         const affordable = balance >= item.cost;
 
         return (
@@ -99,7 +142,29 @@ export function RewardShop({
             </View>
 
             {isOwned ? (
-              <Text style={styles.owned}>{t('rewards.owned')}</Text>
+              // Owned items get a toggle, not a label. "Owned" was the whole
+              // interaction before, which is why twelve purchasable items
+              // changed nothing a student could see.
+              <Pressable
+                testID={`equip-${item.id}`}
+                accessibilityRole="switch"
+                accessibilityState={{ checked: isWorn }}
+                accessibilityLabel={t(
+                  isWorn ? 'rewards.takeOffAccessible' : 'rewards.wearAccessible',
+                  { name: t(`reward.${item.id}`) },
+                )}
+                disabled={busy !== null}
+                style={[styles.equip, isWorn && styles.equipOn]}
+                onPress={() => void equip(item, !isWorn)}
+              >
+                {busy === item.id ? (
+                  <ActivityIndicator color={isWorn ? palette.surface : palette.blue700} />
+                ) : (
+                  <Text style={isWorn ? styles.equipOnLabel : styles.equipLabel}>
+                    {t(isWorn ? 'rewards.worn' : 'rewards.wear')}
+                  </Text>
+                )}
+              </Pressable>
             ) : (
               <Pressable
                 testID={`reward-${item.id}`}
@@ -164,6 +229,20 @@ const styles = StyleSheet.create({
   buyLabel: { ...typography.label, color: palette.surface },
   unaffordable: { backgroundColor: palette.ink100 },
   unaffordableLabel: { ...typography.label, color: palette.ink500 },
-  owned: { ...typography.caption, color: palette.success600 },
+  equip: {
+    minHeight: MIN_TOUCH_TARGET,
+    minWidth: 96,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radius.md,
+    borderWidth: 2,
+    borderColor: palette.blue700,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  equipLabel: { ...typography.label, color: palette.blue700 },
+  // Filled rather than outlined when it is on, so which of four colours a
+  // student is wearing is legible without reading any of the labels.
+  equipOn: { backgroundColor: palette.blue700 },
+  equipOnLabel: { ...typography.label, color: palette.surface },
   error: { ...typography.caption, color: palette.danger600 },
 });

@@ -45,10 +45,21 @@ export function Avatar({
   name,
   size = 48,
   highlighted = false,
+  color = null,
 }: {
   name: string;
   size?: number;
   highlighted?: boolean;
+  /**
+   * A colour the student bought, overriding the one derived from their name.
+   *
+   * Null means "no purchase", not "black": the hashed palette stays the default
+   * so a student who has never opened the shop is unaffected, and a colour that
+   * has been taken off goes back to the one their classmates already know them
+   * by. Resolve it with `avatarColorOf` — this component does not read the
+   * catalogue, so it cannot be handed a title by mistake.
+   */
+  color?: string | null;
 }) {
   return (
     <View
@@ -60,7 +71,7 @@ export function Avatar({
           width: size,
           height: size,
           borderRadius: size / 2,
-          backgroundColor: colorFor(name),
+          backgroundColor: color ?? colorFor(name),
         },
         highlighted && styles.highlighted,
       ]}

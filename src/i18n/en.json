@@ -364,7 +364,6 @@
   "rewards": {
     "balance": "You have {{points}} points",
     "cost": "{{points}} pts",
-    "owned": "Yours",
     "buyAccessible": "Get {{name}} for {{points}} points",
     "cannotAfford": "Not enough points yet, or you already have it.",
     "emptyTitle": "Nothing to show yet",
@@ -373,6 +372,10 @@
       "avatar_color": "Profile colour",
       "board_skin": "Board look",
       "title": "Title under your name"
-    }
+    },
+    "wear": "Wear",
+    "worn": "Wearing",
+    "wearAccessible": "Wear {{name}}",
+    "takeOffAccessible": "Take off {{name}}"
   }
 }

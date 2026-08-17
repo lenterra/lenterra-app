@@ -30,6 +30,7 @@ import type { BentengState, BentengUnit } from '@lenterra/core';
 import { activeUnits, freshnessOf, unitFreshness } from '@lenterra/core';
 
 import { MIN_TOUCH_TARGET, palette, radius, spacing, typography } from '@/src/ui/tokens';
+import { skinFor } from '../skins';
 
 export interface BentengBoardProps {
   state: BentengState;
@@ -47,6 +48,15 @@ export interface BentengBoardProps {
    */
   controllableSide?: 1 | 2;
   disabled?: boolean;
+  /**
+   * A board skin the student has equipped, e.g. `benteng.pasir`.
+   *
+   * Repaints the grid, the empty squares, and the two bases. It deliberately
+   * cannot touch the units: which side a piece belongs to, whether it is
+   * selected, and whether it can be captured are all carried by colour, and a
+   * skin free to repaint them would be a cosmetic that changes play.
+   */
+  skin?: string | null;
 }
 
 export function BentengBoard({
@@ -57,8 +67,10 @@ export function BentengBoard({
   legalTargets,
   controllableSide,
   disabled = false,
+  skin = null,
 }: BentengBoardProps) {
   const { t } = useTranslation();
+  const paint = skinFor('benteng', skin);
 
   const cells = useMemo(() => {
     const map = new Map<string, { unit: BentengUnit | null; base: 1 | 2 | null }>();
@@ -123,7 +135,7 @@ export function BentengBoard({
 
   return (
     <View style={styles.wrapper}>
-      <View style={styles.grid}>
+      <View style={[styles.grid, { backgroundColor: paint.board }]}>
         {Array.from({ length: state.height }, (_, y) => (
           <View key={y} style={styles.row}>
             {Array.from({ length: state.width }, (_, x) => {
@@ -174,8 +186,16 @@ export function BentengBoard({
                   }}
                   style={[
                     styles.cell,
-                    base === state.playerSide && styles.baseOwn,
-                    base !== null && base !== state.playerSide && styles.baseEnemy,
+                    {
+                      backgroundColor:
+                        base === null
+                          ? paint.accent
+                          : base === state.playerSide
+                            ? paint.own
+                            : paint.opponent,
+                    },
+                    // Last, so no skin can paint over the one border that says
+                    // a square is reachable.
                     isTarget && styles.target,
                   ]}
                 >
@@ -243,7 +263,6 @@ const CELL = Math.max(40, MIN_TOUCH_TARGET - 8);
 const styles = StyleSheet.create({
   wrapper: { gap: spacing.sm, alignItems: 'center' },
   grid: {
-    backgroundColor: palette.surface,
     borderRadius: radius.lg,
     padding: spacing.sm,
     gap: 2,
@@ -254,12 +273,9 @@ const styles = StyleSheet.create({
     width: CELL,
     height: CELL,
     borderRadius: radius.sm,
-    backgroundColor: palette.ink100,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  baseOwn: { backgroundColor: palette.blue100 },
-  baseEnemy: { backgroundColor: palette.orange100 },
   // A reachable square is outlined rather than tinted, so it stays visible on
   // a washed-out panel in daylight (PRD-ACC-016).
   target: { borderWidth: 2, borderColor: palette.blue600 },

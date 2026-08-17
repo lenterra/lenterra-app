@@ -40,6 +40,20 @@ const BootstrapSchema = z.object({
     hasWallet: z.boolean(),
     /** Set while a deletion request is outstanding, so it can be cancelled. */
     deletionScheduledFor: z.string().nullable().default(null),
+    /**
+     * What this student is wearing, as redeemed item ids.
+     *
+     * Defaulted rather than required so a client stays compatible with a server
+     * that predates the wardrobe — an old server simply dresses everybody in
+     * the default colour, which is what it did before.
+     */
+    equipped: z
+      .object({
+        avatarColor: z.string().nullable().default(null),
+        boardSkin: z.string().nullable().default(null),
+        title: z.string().nullable().default(null),
+      })
+      .default({ avatarColor: null, boardSkin: null, title: null }),
   }),
   class: z
     .object({ id: z.string(), name: z.string(), leaderboardEnabled: z.boolean() })
@@ -127,6 +141,10 @@ const LeaderboardSchema = z.object({
       displayName: z.string(),
       points: z.number(),
       isSelf: z.boolean(),
+      // What this classmate is wearing. A cosmetic nobody else can see is not
+      // worth earning, so the board is where most of them are actually seen.
+      avatarColor: z.string().nullable().default(null),
+      title: z.string().nullable().default(null),
     }),
   ),
   self: z.object({ rank: z.number(), points: z.number() }).nullable(),

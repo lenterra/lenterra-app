@@ -38,6 +38,7 @@ import {
 	type LeaderboardEntry,
 } from '@/src/data/queries/hooks';
 import { RpcError } from '@/src/data/nakama/rpc';
+import { avatarColorOf, titleKeyOf } from '@/src/features/rewards/wardrobe';
 import { Avatar } from '@/src/ui/components/Avatar';
 import {
 	EmptyState,
@@ -152,11 +153,17 @@ export default function BoardScreen() {
 						<View style={styles.podium}>
 							{podium.map((entry) => (
 								<View key={entry.userId} style={styles.podiumItem}>
-									<Avatar name={entry.displayName} size={entry.rank === 1 ? 64 : 52} highlighted={entry.isSelf} />
+									<Avatar
+										name={entry.displayName}
+										size={entry.rank === 1 ? 64 : 52}
+										highlighted={entry.isSelf}
+										color={avatarColorOf(accountId, entry.avatarColor)}
+									/>
 									<Text style={styles.podiumRank}>{entry.rank}</Text>
 									<Text numberOfLines={1} style={styles.podiumName}>
 										{entry.isSelf ? t('board.you') : entry.displayName}
 									</Text>
+									<RewardTitle accountId={accountId} itemId={entry.title} />
 									<Text style={styles.podiumPoints}>
 										{t('home.points', { count: entry.points })}
 									</Text>
@@ -171,10 +178,18 @@ export default function BoardScreen() {
 									style={[styles.row, entry.isSelf && styles.rowSelf]}
 								>
 									<Text style={styles.rowRank}>{entry.rank}</Text>
-									<Avatar name={entry.displayName} size={36} highlighted={entry.isSelf} />
-									<Text numberOfLines={1} style={styles.rowName}>
-										{entry.isSelf ? t('board.you') : entry.displayName}
-									</Text>
+									<Avatar
+										name={entry.displayName}
+										size={36}
+										highlighted={entry.isSelf}
+										color={avatarColorOf(accountId, entry.avatarColor)}
+									/>
+									<View style={styles.rowIdentity}>
+										<Text numberOfLines={1} style={styles.rowName}>
+											{entry.isSelf ? t('board.you') : entry.displayName}
+										</Text>
+										<RewardTitle accountId={accountId} itemId={entry.title} />
+									</View>
 									<Text style={styles.rowPoints}>{entry.points}</Text>
 								</View>
 							))}
@@ -194,6 +209,30 @@ export default function BoardScreen() {
 				) : null}
 			</ScrollView>
 		</SafeAreaView>
+	);
+}
+
+/**
+ * The title a student is wearing, under their name.
+ *
+ * Renders nothing at all when there is no title, when the catalogue on this
+ * device does not know the id, or when the string is missing from the locale.
+ * A row without a title must look like a row that never had one — falling back
+ * to the raw id would show `title.pemikir` to a classmate, and an empty line
+ * would leave a gap that reads as a rendering fault.
+ */
+function RewardTitle({ accountId, itemId }: { accountId: string | null; itemId: string | null }) {
+	const { t } = useTranslation();
+	const key = titleKeyOf(accountId, itemId);
+	if (!key) return null;
+
+	const label = t(key);
+	if (label === key) return null;
+
+	return (
+		<Text numberOfLines={1} style={styles.rewardTitle}>
+			{label}
+		</Text>
 	);
 }
 
@@ -348,6 +387,10 @@ const styles = StyleSheet.create({
 	podiumRank: { ...typography.heading, color: palette.blue700 },
 	podiumName: { ...typography.label, color: palette.ink900, maxWidth: 96, textAlign: 'center' },
 	podiumPoints: { ...typography.caption, color: palette.ink500 },
+	// Smaller and lighter than the name it sits under: a title is decoration a
+	// student chose, and it must not compete with the one thing on the row that
+	// identifies a person.
+	rewardTitle: { ...typography.caption, color: palette.ink500, fontStyle: 'italic' },
 	list: { backgroundColor: palette.surface, borderRadius: radius.lg, overflow: 'hidden' },
 	row: {
 		flexDirection: 'row',
@@ -360,7 +403,8 @@ const styles = StyleSheet.create({
 	},
 	rowSelf: { backgroundColor: palette.blue050 },
 	rowRank: { ...typography.label, color: palette.ink500, width: 24 },
-	rowName: { ...typography.body, color: palette.ink900, flex: 1 },
+	rowIdentity: { flex: 1, gap: 2 },
+	rowName: { ...typography.body, color: palette.ink900 },
 	rowPoints: { ...typography.label, color: palette.ink700 },
 	asOf: { ...typography.caption, color: palette.ink300, textAlign: 'center' },
 });

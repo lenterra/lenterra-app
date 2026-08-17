@@ -364,7 +364,6 @@
   "rewards": {
     "balance": "Poinmu {{points}}",
     "cost": "{{points}} poin",
-    "owned": "Sudah punya",
     "buyAccessible": "Ambil {{name}} seharga {{points}} poin",
     "cannotAfford": "Poinmu belum cukup, atau kamu sudah punya ini.",
     "emptyTitle": "Belum ada yang bisa ditampilkan",
@@ -373,6 +372,10 @@
       "avatar_color": "Warna profil",
       "board_skin": "Tampilan papan",
       "title": "Gelar di bawah namamu"
-    }
+    },
+    "wear": "Pakai",
+    "worn": "Dipakai",
+    "wearAccessible": "Pakai {{name}}",
+    "takeOffAccessible": "Lepas {{name}}"
   }
 }

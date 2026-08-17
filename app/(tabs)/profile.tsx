@@ -44,6 +44,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { activeAccountId, signOut } from '@/src/data/cache/storage';
 import { queryKeys } from '@/src/data/queries/client';
 import { RewardShop } from '@/src/features/rewards/RewardShop';
+import { avatarColorOf, titleKeyOf } from '@/src/features/rewards/wardrobe';
 import {
   useBootstrap,
   useCertificates,
@@ -137,8 +138,13 @@ export default function ProfileScreen() {
         }
       >
         <View style={styles.header}>
-          <Avatar name={profile?.displayName ?? ''} size={72} />
+          <Avatar
+            name={profile?.displayName ?? ''}
+            size={72}
+            color={avatarColorOf(accountId, profile?.equipped.avatarColor ?? null)}
+          />
           <Text style={styles.name}>{profile?.displayName ?? ''}</Text>
+          <OwnTitle accountId={accountId} itemId={profile?.equipped.title ?? null} />
           {bootstrap.data?.class ? (
             <Text style={styles.className}>{bootstrap.data.class.name}</Text>
           ) : null}
@@ -798,6 +804,10 @@ function CertificateCard({
  */
 function RewardsTab({ accountId }: { accountId: string | null }) {
   const points = usePoints(accountId);
+  // What is on comes from the bootstrap rather than from the points history:
+  // one source for one fact, so the shop and the header cannot disagree about
+  // which colour this student is wearing.
+  const bootstrap = useBootstrap(accountId);
 
   if (points.isLoading && !points.data) return <LoadingState />;
   if (points.isError && !points.data) return <ErrorState onRetry={() => points.refetch()} />;
@@ -808,10 +818,35 @@ function RewardsTab({ accountId }: { accountId: string | null }) {
         accountId={accountId}
         balance={points.data?.balance ?? 0}
         owned={points.data?.owned ?? []}
+        equipped={
+          bootstrap.data?.profile.equipped ?? {
+            avatarColor: null,
+            boardSkin: null,
+            title: null,
+          }
+        }
         onRedeemed={() => void points.refetch()}
       />
     </View>
   );
+}
+
+/**
+ * The student's own title, under their name.
+ *
+ * Renders nothing when there is no title, when this device's catalogue does not
+ * know the id, or when the locale has no string for it. Showing `title.pemikir`
+ * to the student who bought it would be worse than showing nothing.
+ */
+function OwnTitle({ accountId, itemId }: { accountId: string | null; itemId: string | null }) {
+  const { t } = useTranslation();
+  const key = titleKeyOf(accountId, itemId);
+  if (!key) return null;
+
+  const label = t(key);
+  if (label === key) return null;
+
+  return <Text style={styles.ownTitle}>{label}</Text>;
 }
 
 // ---------------------------------------------------------------------------
@@ -984,6 +1019,7 @@ const styles = StyleSheet.create({
   header: { alignItems: 'center', gap: spacing.xs },
   name: { ...typography.title, color: palette.ink900 },
   className: { ...typography.caption, color: palette.ink500 },
+  ownTitle: { ...typography.caption, color: palette.ink500, fontStyle: 'italic' },
 
   statRow: {
     flexDirection: 'row',
