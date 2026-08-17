@@ -64,6 +64,7 @@ export interface UsePlaySessionOptions {
 
 export function usePlaySession(options: UsePlaySessionOptions) {
   const { accountId, mission, catalogVersion } = options;
+  const twoPlayer = options.twoPlayer === true;
 
   const engine = useMemo(
     () => engineFor(mission.game) as GameEngine<unknown, unknown> | null,
@@ -187,7 +188,7 @@ export function usePlaySession(options: UsePlaySessionOptions) {
         // offline — is the evidence that the offline design is used at all, and
         // it is worthless if this flag is a constant.
         playedOffline: !isOnline(),
-        twoPlayer: options.twoPlayer === true,
+        twoPlayer,
         coreVersion: engine.version,
         clientVersion: config.clientVersion,
       },
@@ -197,7 +198,7 @@ export function usePlaySession(options: UsePlaySessionOptions) {
     clearResume();
     setFinished(true);
     options.onFinished?.({ outcome, replay, durationMs, attemptKey });
-  }, [accountId, catalogVersion, clearResume, engine, hintShown, hintUsed, mission, options]);
+  }, [accountId, catalogVersion, clearResume, engine, hintShown, hintUsed, mission, options, twoPlayer]);
 
   // --- playing ------------------------------------------------------------
   const play = useCallback(
@@ -217,7 +218,18 @@ export function usePlaySession(options: UsePlaySessionOptions) {
       }
 
       setRejection(null);
-      const result = active.play(parsed, 'player', Date.now() - startedAt.current);
+
+      // In hot-seat the two students share the screen, so who a move belongs to
+      // is decided by whose side is to move, not by who is holding the phone.
+      // The guest is `opponent`: their moves are replayed and validated like any
+      // other, and the server scores none of them as the account holder's
+      // (TRD-MP-002). Nothing about the guest is recorded anywhere.
+      const actor: 'player' | 'opponent' =
+        twoPlayer && engine.sideToMove(active.state) !== engine.playerSide(active.state)
+          ? 'opponent'
+          : 'player';
+
+      const result = active.play(parsed, actor, Date.now() - startedAt.current);
 
       // Logical state is correct immediately; the animation follows.
       setState(result.state);
@@ -235,7 +247,10 @@ export function usePlaySession(options: UsePlaySessionOptions) {
       // The deterministic opponent replies. Same seed, same move, every time —
       // which is what lets the server verify the opponent's side rather than
       // trust it.
-      if (engine.sideToMove(active.state) !== engine.playerSide(active.state)) {
+      //
+      // Not in hot-seat: there the other side is a person, and an AI reply would
+      // take their turn away from them.
+      if (!twoPlayer && engine.sideToMove(active.state) !== engine.playerSide(active.state)) {
         const reply = active.aiMove();
         if (reply) {
           const aiResult = active.play(reply, 'ai', Date.now() - startedAt.current);
@@ -249,7 +264,7 @@ export function usePlaySession(options: UsePlaySessionOptions) {
 
       return null;
     },
-    [animator, engine, finish, finished, persistResume],
+    [animator, engine, finish, finished, persistResume, twoPlayer],
   );
 
   const skipAnimation = useCallback(() => {
@@ -306,6 +321,21 @@ export function usePlaySession(options: UsePlaySessionOptions) {
     hintShown,
     hintUsed,
     abandon,
+    twoPlayer,
+    /**
+     * Whose turn it is, in hot-seat terms.
+     *
+     * The current player has to be unmistakable (TRD-MP-001): two students
+     * sharing a phone in a noisy classroom will otherwise move on each other's
+     * turn, and a move made by the wrong person cannot be taken back.
+     */
+    seatToMove: (engine && state
+      ? engine.sideToMove(state) === engine.playerSide(state)
+        ? 'you'
+        : twoPlayer
+          ? 'guest'
+          : 'machine'
+      : null) as 'you' | 'guest' | 'machine' | null,
     legalMoves: engine && state ? engine.legalMoves(state) : [],
     goal: engine && state ? engine.evaluateGoal(state, mission.goal) : null,
   };

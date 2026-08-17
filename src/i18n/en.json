@@ -81,7 +81,14 @@
     "quit": "Leave this mission",
     "quitConfirm": "Your progress in this mission will be lost. Leave?",
     "resumeTitle": "Continue this mission?",
-    "resumeBody": "You stopped part way through."
+    "resumeBody": "You stopped part way through.",
+    "chooseMode": "Play alone or together?",
+    "modeSolo": "Play alone",
+    "modeSoloBody": "Your opponent is the machine. It plays the same move on the same board every time.",
+    "modeHotseat": "Two on one phone",
+    "modeHotseatBody": "Take turns on one screen, the way congklak is normally played.",
+    "modeHotseatNote": "Only your own moves are recorded. Your friend needs no account, and nothing about them is stored.",
+    "guestTurn": "Your friend's turn"
   },
   "result": {
     "success": "Well done!",

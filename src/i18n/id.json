@@ -81,7 +81,14 @@
     "quit": "Keluar dari misi",
     "quitConfirm": "Kemajuanmu di misi ini akan hilang. Keluar?",
     "resumeTitle": "Lanjutkan misi?",
-    "resumeBody": "Kamu berhenti di tengah misi ini."
+    "resumeBody": "Kamu berhenti di tengah misi ini.",
+    "chooseMode": "Main sendiri atau berdua?",
+    "modeSolo": "Main sendiri",
+    "modeSoloBody": "Lawanmu adalah mesin. Langkahnya selalu sama untuk papan yang sama.",
+    "modeHotseat": "Berdua satu HP",
+    "modeHotseatBody": "Bergantian di satu layar, seperti main congklak biasa.",
+    "modeHotseatNote": "Hanya langkahmu sendiri yang dicatat. Temanmu tidak perlu punya akun, dan tidak ada datanya yang disimpan.",
+    "guestTurn": "Giliran temanmu"
   },
   "result": {
     "success": "Berhasil!",

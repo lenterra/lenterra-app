@@ -38,6 +38,14 @@ export interface BentengBoardProps {
   onSelectUnit: (unitId: string | null) => void;
   onMove: (unitId: string, x: number, y: number) => void;
   legalTargets: { unitId: string; x: number; y: number }[];
+  /**
+   * Which side the person holding the phone may move.
+   *
+   * Not always the student's own: in hot-seat the guest takes the other side on
+   * the same screen, and a board that only ever lets you touch `playerSide`
+   * would make their turn unplayable (TRD-MP-001).
+   */
+  controllableSide?: 1 | 2;
   disabled?: boolean;
 }
 
@@ -47,6 +55,7 @@ export function BentengBoard({
   onSelectUnit,
   onMove,
   legalTargets,
+  controllableSide,
   disabled = false,
 }: BentengBoardProps) {
   const { t } = useTranslation();
@@ -83,6 +92,8 @@ export function BentengBoard({
    * Computed from the same comparison the rule uses, so the marks cannot
    * disagree with what the engine will accept.
    */
+  const mySide = controllableSide ?? state.playerSide;
+
   const capturable = useMemo(() => {
     if (!selected) return new Set<string>();
     const mine = freshnessOf(state, selected);
@@ -128,7 +139,7 @@ export function BentengBoard({
                   disabled={disabled}
                   onPress={() => {
                     if (isTarget && selectedUnitId) return onMove(selectedUnitId, x, y);
-                    if (unit && unit.team === state.playerSide) {
+                    if (unit && unit.team === mySide) {
                       return onSelectUnit(isSelected ? null : unit.id);
                     }
                     onSelectUnit(null);

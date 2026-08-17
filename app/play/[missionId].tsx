@@ -51,6 +51,10 @@ export default function PlayScreen() {
 	const catalogVersion = accountId ? currentCatalogVersion(accountId) : null;
 
 	const [result, setResult] = useState<PlayResult | null>(null);
+	// Null until the student has chosen. Hot-seat is never assumed: a mission
+	// started in the wrong mode either scores a friend's play as the student's
+	// or takes a friend's turns away (PRD-APP-025).
+	const [mode, setMode] = useState<'solo' | 'hotseat' | null>(null);
 	const onFinished = useCallback((r: PlayResult) => setResult(r), []);
 
 	// Landscape for the duration, portrait on the way out (PRD-APP-023). The
@@ -77,11 +81,16 @@ export default function PlayScreen() {
 		);
 	}
 
+	if (mode === null) {
+		return <ModeChooser onChoose={setMode} onLeave={() => router.back()} />;
+	}
+
 	return (
 		<PlaySurface
 			accountId={accountId}
 			mission={found.mission}
 			catalogVersion={found.catalogVersion}
+			twoPlayer={mode === 'hotseat'}
 			result={result}
 			onFinished={onFinished}
 			onLeave={() => router.back()}
@@ -89,10 +98,59 @@ export default function PlayScreen() {
 	);
 }
 
+/**
+ * Solo or two-player, chosen before the board appears.
+ *
+ * Congklak and Benteng are social games; two students on one handset is how
+ * they are actually played, and it is the only multiplayer R1 has. What the
+ * choice buys is honesty about the record: in hot-seat only the account
+ * holder's own moves feed the model, the guest is never identified or given an
+ * account, and the attempt is marked shared so its evidence counts for less
+ * (TRD-MP-002).
+ */
+function ModeChooser({
+	onChoose,
+	onLeave,
+}: {
+	onChoose: (mode: 'solo' | 'hotseat') => void;
+	onLeave: () => void;
+}) {
+	const { t } = useTranslation();
+
+	return (
+		<SafeAreaView style={styles.screen}>
+			<ScrollView contentContainerStyle={styles.chooserBody}>
+				<Text style={styles.chooserTitle}>{t('play.chooseMode')}</Text>
+
+				<Pressable accessibilityRole="button" style={styles.modeCard} onPress={() => onChoose('solo')}>
+					<Text style={styles.modeTitle}>{t('play.modeSolo')}</Text>
+					<Text style={styles.modeBody}>{t('play.modeSoloBody')}</Text>
+				</Pressable>
+
+				<Pressable
+					accessibilityRole="button"
+					style={styles.modeCard}
+					onPress={() => onChoose('hotseat')}
+				>
+					<Text style={styles.modeTitle}>{t('play.modeHotseat')}</Text>
+					<Text style={styles.modeBody}>{t('play.modeHotseatBody')}</Text>
+					{/* Said before they choose, not discovered afterwards. */}
+					<Text style={styles.modeNote}>{t('play.modeHotseatNote')}</Text>
+				</Pressable>
+
+				<Pressable accessibilityRole="button" style={styles.secondary} onPress={onLeave}>
+					<Text style={styles.secondaryLabel}>{t('common.back')}</Text>
+				</Pressable>
+			</ScrollView>
+		</SafeAreaView>
+	);
+}
+
 function PlaySurface({
 	accountId,
 	mission,
 	catalogVersion,
+	twoPlayer,
 	result,
 	onFinished,
 	onLeave,
@@ -100,13 +158,14 @@ function PlaySurface({
 	accountId: string;
 	mission: Mission;
 	catalogVersion: string;
+	twoPlayer: boolean;
 	result: PlayResult | null;
 	onFinished: (result: PlayResult) => void;
 	onLeave: () => void;
 }) {
 	const { t } = useTranslation();
 
-	const session = usePlaySession({ accountId, mission, catalogVersion, onFinished });
+	const session = usePlaySession({ accountId, mission, catalogVersion, twoPlayer, onFinished });
 	// Which unit the student has picked up. Benteng only — Congklak has no
 	// two-step move, and giving it one would add a tap for nothing.
 	const [selectedUnitId, setSelectedUnitId] = useState<string | null>(null);
@@ -156,8 +215,22 @@ function PlaySurface({
 				<Pressable accessibilityRole="button" onPress={onLeave} hitSlop={12}>
 					<Text style={styles.leave}>{t('play.quit')}</Text>
 				</Pressable>
-				<Text style={styles.turn}>
-					{state.toMove === state.playerSide ? t('play.yourTurn') : t('play.opponentTurn')}
+				{/*
+					Whose turn it is, said in the mode's own words. "Opponent's
+					turn" is accurate against the machine and useless when the
+					opponent is the person sitting next to you — two students in a
+					noisy classroom will move on each other's turn, and a move made
+					by the wrong person cannot be taken back (TRD-MP-001).
+				*/}
+				<Text
+					accessibilityRole="header"
+					style={[styles.turn, session.seatToMove === 'guest' && styles.turnGuest]}
+				>
+					{session.seatToMove === 'you'
+						? t('play.yourTurn')
+						: session.seatToMove === 'guest'
+							? t('play.guestTurn')
+							: t('play.opponentTurn')}
 				</Text>
 			</View>
 
@@ -173,7 +246,7 @@ function PlaySurface({
 						session.play({ kind: 'move', unitId, x, y });
 					}}
 					legalTargets={session.legalMoves as { unitId: string; x: number; y: number }[]}
-					disabled={session.animating || state.toMove !== state.playerSide}
+					disabled={session.animating || session.seatToMove === 'machine'}
 				/>
 			) : (
 				<CongklakBoard
@@ -181,7 +254,7 @@ function PlaySurface({
 					legalPits={(session.legalMoves as CongklakMove[])
 						.filter((move) => move.kind === 'sow')
 						.map((move) => move.pit)}
-					disabled={session.animating || state.toMove !== state.playerSide}
+					disabled={session.animating || session.seatToMove === 'machine'}
 					onPitPress={(pit) => session.play({ kind: 'sow', pit })}
 				/>
 			)}
@@ -219,6 +292,20 @@ const styles = StyleSheet.create({
 	header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
 	leave: { ...typography.label, color: palette.ink500 },
 	turn: { ...typography.label, color: palette.blue600 },
+	turnGuest: { color: palette.orange600 },
+
+	chooserBody: { flexGrow: 1, justifyContent: 'center', gap: spacing.lg, padding: spacing.lg },
+	chooserTitle: { ...typography.title, color: palette.ink900, textAlign: 'center' },
+	modeCard: {
+		backgroundColor: palette.surface,
+		borderRadius: radius.lg,
+		padding: spacing.lg,
+		gap: spacing.xs,
+		minHeight: MIN_TOUCH_TARGET,
+	},
+	modeTitle: { ...typography.heading, color: palette.ink900 },
+	modeBody: { ...typography.body, color: palette.ink700 },
+	modeNote: { ...typography.caption, color: palette.ink500 },
 	brief: { ...typography.body, color: palette.ink700 },
 	skip: { minHeight: MIN_TOUCH_TARGET, alignItems: 'center', justifyContent: 'center' },
 	skipLabel: { ...typography.caption, color: palette.ink500 },
