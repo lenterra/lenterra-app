@@ -3,7 +3,11 @@ module.exports = function (api) {
 	return {
 		presets: ["babel-preset-expo"],
 		plugins: [
-			"react-native-reanimated/plugin",
+			// Reanimated 4 moved its worklet transform into `react-native-worklets`.
+			// `react-native-reanimated/plugin` is now a shim that requires this one,
+			// and loading it directly fails at Babel config time — which surfaces as
+			// every test suite failing to run rather than as a dependency error.
+			"react-native-worklets/plugin",
 		],
 	};
 };

@@ -92,8 +92,17 @@ function toCode(value: string): ErrorCode {
 }
 
 export interface RpcOptions<T> {
-  /** Validates `data`. Omit only where the payload is genuinely opaque. */
-  schema?: z.ZodType<T>;
+  /**
+   * Validates `data`. Omit only where the payload is genuinely opaque.
+   *
+   * The input parameter is pinned to `unknown` on purpose. A bare
+   * `z.ZodType<T>` lets TypeScript bind `T` to the schema's *input* type, and
+   * for any schema using `.default()` those differ — a defaulted field is
+   * optional going in and guaranteed coming out. Callers annotate their hooks
+   * with `z.infer`, which is the output, so the two disagreed the moment a
+   * default was added and the error pointed at the hook rather than here.
+   */
+  schema?: z.ZodType<T, z.ZodTypeDef, unknown>;
   /** Set for calls that must not trigger a token refresh loop. */
   skipRefresh?: boolean;
 }

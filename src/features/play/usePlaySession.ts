@@ -72,7 +72,22 @@ export function usePlaySession(options: UsePlaySessionOptions) {
   );
 
   const recorder = useRef<ReplayRecorder<unknown, unknown> | null>(null);
-  const startedAt = useRef<number>(Date.now());
+  // Null until the session starts, rather than `useRef(Date.now())`. `useRef`
+  // evaluates its argument on every render and discards all but the first, so
+  // the old form read the clock dozens of times per mission and threw the
+  // readings away. Harmless, but it is a clock read during render, and this is
+  // a codebase where every timestamp that matters comes from the server.
+  const startedAt = useRef<number | null>(null);
+
+  /**
+   * When this session began.
+   *
+   * Every caller runs after the mount effect has set it. The fallback exists
+   * because the type says it can be null, and returning `now` — a zero-length
+   * session — is the only reading that cannot silently inflate a duration the
+   * server will score.
+   */
+  const startedAtMs = () => startedAt.current ?? Date.now();
   const [state, setState] = useState<unknown>(null);
   const [finished, setFinished] = useState(false);
   const [rejection, setRejection] = useState<PlayRejection | null>(null);
@@ -145,7 +160,7 @@ export function usePlaySession(options: UsePlaySessionOptions) {
       missionId: mission.id,
       contentVersion: mission.contentVersion,
       moves: replay.moves,
-      startedAt: startedAt.current,
+      startedAt: startedAtMs(),
       hintShown,
       hintUsed,
     } satisfies ResumeState);
@@ -162,7 +177,7 @@ export function usePlaySession(options: UsePlaySessionOptions) {
 
     const replay = active.finish();
     const outcome = active.outcome();
-    const durationMs = Date.now() - startedAt.current;
+    const durationMs = Date.now() - startedAtMs();
     const attemptKey = newItemId();
 
     // Persist before confirming. A crash between showing "+10 points" and
@@ -179,7 +194,7 @@ export function usePlaySession(options: UsePlaySessionOptions) {
         replay,
         claimedOutcome: outcome,
         durationMs,
-        clientStartedAt: new Date(startedAt.current).toISOString(),
+        clientStartedAt: new Date(startedAtMs()).toISOString(),
         // Overwritten by the queue with the real monotonic value.
         deviceSeq: 0,
         hintShown,
@@ -229,7 +244,7 @@ export function usePlaySession(options: UsePlaySessionOptions) {
           ? 'opponent'
           : 'player';
 
-      const result = active.play(parsed, actor, Date.now() - startedAt.current);
+      const result = active.play(parsed, actor, Date.now() - startedAtMs());
 
       // Logical state is correct immediately; the animation follows.
       setState(result.state);
@@ -253,7 +268,7 @@ export function usePlaySession(options: UsePlaySessionOptions) {
       if (!twoPlayer && engine.sideToMove(active.state) !== engine.playerSide(active.state)) {
         const reply = active.aiMove();
         if (reply) {
-          const aiResult = active.play(reply, 'ai', Date.now() - startedAt.current);
+          const aiResult = active.play(reply, 'ai', Date.now() - startedAtMs());
           setState(aiResult.state);
           setLastEvents((previous) => [...previous, ...aiResult.events]);
           animator.enqueue([...result.events, ...aiResult.events]);

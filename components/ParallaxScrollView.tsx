@@ -1,5 +1,7 @@
 import type { PropsWithChildren, ReactElement } from "react";
-import { StyleSheet, useColorScheme } from "react-native";
+import { StyleSheet } from "react-native";
+
+import { useScheme } from "@/hooks/useColorSchemeName";
 import Animated, {
 	interpolate,
 	useAnimatedRef,
@@ -21,7 +23,7 @@ export function ParallaxScrollView({
 	headerImage,
 	headerBackgroundColor,
 }: Props) {
-	const colorScheme = useColorScheme() ?? "light";
+	const colorScheme = useScheme();
 	const scrollRef = useAnimatedRef<Animated.ScrollView>();
 	const scrollOffset = useScrollViewOffset(scrollRef);
 
