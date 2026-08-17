@@ -9,16 +9,38 @@
  */
 
 import * as React from 'react';
-import renderer from 'react-test-renderer';
-import { View } from 'react-native';
+import renderer, { act } from 'react-test-renderer';
 
 import { Avatar, initialsOf } from '../Avatar';
 
-/** The flattened style of the avatar circle. */
+/**
+ * The rendered tree as plain JSON.
+ *
+ * Read through `toJSON` rather than `root.findByType(View)`. The instance API
+ * ties the test to how React types host components, which changed under React
+ * 19 and broke three assertions that were still describing correct behaviour —
+ * a test failing for a reason that has nothing to do with its subject.
+ */
+type Node = { props: Record<string, unknown>; children: Node[] | null };
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- React 19
+// narrowed ReactElement's default type argument to `unknown`, while
+// react-test-renderer still asks for `any`. Nothing here reads the props of
+// the element being passed in, so the widening costs no safety.
+function render(element: React.ReactElement<any>): Node {
+  // React 19 requires every render to be inside `act`, including one that
+  // triggers no state update. Without it the tree still renders and every
+  // assertion fails on a warning rather than on the thing being asserted.
+  let tree!: renderer.ReactTestRenderer;
+  act(() => {
+    tree = renderer.create(element);
+  });
+  return tree.toJSON() as unknown as Node;
+}
+
+/** The flattened style of the avatar circle, which is the outermost node. */
 function circleStyle(element: React.ReactElement): Record<string, unknown> {
-  const tree = renderer.create(element);
-  const root = tree.root.findByType(View);
-  const style = root.props.style as unknown;
+  const style = render(element).props.style;
   const layers = Array.isArray(style) ? style : [style];
   return Object.assign({}, ...layers.filter(Boolean).map((layer) => layer as object));
 }
@@ -79,7 +101,8 @@ describe('Avatar', () => {
   });
 
   it('labels itself with the name for a screen reader', () => {
-    const tree = renderer.create(<Avatar name="Rina Lestari" color="#0E7C86" />);
-    expect(tree.root.findByType(View).props.accessibilityLabel).toBe('Rina Lestari');
+    expect(render(<Avatar name="Rina Lestari" color="#0E7C86" />).props.accessibilityLabel).toBe(
+      'Rina Lestari',
+    );
   });
 });

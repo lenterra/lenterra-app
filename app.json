@@ -7,11 +7,6 @@
     "icon": "./assets/images/lenterra-logo.png",
     "scheme": "com.lenterra",
     "userInterfaceStyle": "automatic",
-    "splash": {
-      "image": "./assets/images/lenterra-logo.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.lenterra",
@@ -70,7 +65,18 @@
             ]
           }
         }
-      ]
+      ],
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/lenterra-logo.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#ffffff"
+        }
+      ],
+      "expo-status-bar",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true

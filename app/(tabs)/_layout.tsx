@@ -3,15 +3,15 @@ import React from "react";
 
 import { TabBarIcon } from "@/components/navigation/TabBarIcon";
 import { Colors } from "@/constants/Colors";
-import { useColorScheme } from "@/hooks/useColorScheme";
+import { useScheme } from "@/hooks/useColorSchemeName";
 
 export default function TabLayout() {
-	const colorScheme = useColorScheme();
+	const colorScheme = useScheme();
 
 	return (
 		<Tabs
 			screenOptions={{
-				tabBarActiveTintColor: Colors[colorScheme ?? "light"].tint,
+				tabBarActiveTintColor: Colors[colorScheme].tint,
 				headerShown: false,
 			}}
 		>
@@ -66,7 +66,7 @@ export default function TabLayout() {
 			<Tabs.Screen
 				name="profile"
 				options={{
-					tabBarTestID: "tab-profile",
+					tabBarButtonTestID: "tab-profile",
 					title: "Profile",
 					tabBarIcon: ({ color, focused }) => (
 						<TabBarIcon

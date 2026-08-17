@@ -42,12 +42,33 @@ jobs:
           # Secret scanning needs history to scan, not just the tip.
           fetch-depth: 0
 
+      # `@lenterra/core` is a `file:../lenterra-api/packages/core` dependency —
+      # the shared rules engine, deliberately one implementation running in both
+      # Hermes and goja. Without this checkout the install cannot resolve it and
+      # every job here fails before it starts. It has never been noticed because
+      # both remotes were empty until recently, so none of these workflows had
+      # ever run.
+      - name: check out the shared core
+        uses: actions/checkout@v4
+        with:
+          repository: lenterra/lenterra-api
+          path: lenterra-api-src
+
+      - name: put it where package.json expects it
+        run: |
+          mkdir -p ../lenterra-api
+          mv lenterra-api-src/packages ../lenterra-api/packages
+          (cd ../lenterra-api/packages/core && yarn install --frozen-lockfile && yarn build)
+
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: npm
+          cache: yarn
 
-      - run: npm ci
+      # yarn, not npm. `npm ci` cannot install this tree: the thirdweb React
+      # Native adapter declares a stale peer range for netinfo, and forcing it
+      # with --legacy-peer-deps would suppress every future peer conflict too.
+      - run: yarn install --frozen-lockfile
 
       - name: typecheck
         run: npm run typecheck
@@ -93,16 +114,37 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+      # `@lenterra/core` is a `file:../lenterra-api/packages/core` dependency —
+      # the shared rules engine, deliberately one implementation running in both
+      # Hermes and goja. Without this checkout the install cannot resolve it and
+      # every job here fails before it starts. It has never been noticed because
+      # both remotes were empty until recently, so none of these workflows had
+      # ever run.
+      - name: check out the shared core
+        uses: actions/checkout@v4
+        with:
+          repository: lenterra/lenterra-api
+          path: lenterra-api-src
+
+      - name: put it where package.json expects it
+        run: |
+          mkdir -p ../lenterra-api
+          mv lenterra-api-src/packages ../lenterra-api/packages
+          (cd ../lenterra-api/packages/core && yarn install --frozen-lockfile && yarn build)
+
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: npm
+          cache: yarn
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
-      - run: npm ci
+      # yarn, not npm. `npm ci` cannot install this tree: the thirdweb React
+      # Native adapter declares a stale peer range for netinfo, and forcing it
+      # with --legacy-peer-deps would suppress every future peer conflict too.
+      - run: yarn install --frozen-lockfile
 
       # `android/` is gitignored, so the native project is generated here from
       # the config plugins in app.json — which is also what proves those plugins

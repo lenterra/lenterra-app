@@ -12,14 +12,19 @@
  * precede everything else.
  */
 
+import { QueryClientProvider } from "@tanstack/react-query";
+import { useFonts } from "expo-font";
+// Theming comes from expo-router rather than @react-navigation/native. As of
+// SDK 56 expo-router vendors react-navigation and refuses to load alongside a
+// separately-installed copy — two navigation trees would be built and only one
+// of them would be the one routing.
 import {
 	DarkTheme,
 	DefaultTheme,
+	Redirect,
+	Stack,
 	ThemeProvider,
-} from "@react-navigation/native";
-import { QueryClientProvider } from "@tanstack/react-query";
-import { useFonts } from "expo-font";
-import { Redirect, Stack } from "expo-router";
+} from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect, useMemo } from "react";
 import { ThirdwebProvider } from "thirdweb/react";
