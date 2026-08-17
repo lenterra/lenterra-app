@@ -17,8 +17,9 @@
  *    like nobody has played.
  */
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
+	Pressable,
 	RefreshControl,
 	SafeAreaView,
 	ScrollView,
@@ -38,12 +39,23 @@ import {
 	ErrorState,
 	LoadingState,
 } from '@/src/ui/components/ScreenState';
-import { palette, radius, spacing, typography } from '@/src/ui/tokens';
+import { MIN_TOUCH_TARGET, palette, radius, spacing, typography } from '@/src/ui/tokens';
+
+type Scope = 'class' | 'school';
+type Period = 'week' | 'all';
+
+const SCOPES: Scope[] = ['class', 'school'];
+const PERIODS: Period[] = ['week', 'all'];
 
 export default function BoardScreen() {
 	const { t } = useTranslation();
 	const accountId = activeAccountId();
-	const board = useLeaderboard(accountId, 'class', 'week');
+	// Class and week are the defaults because they are the scope and period a
+	// student can actually influence today (PRD-SOC-001, PRD-SOC-003). Regional
+	// and national are deliberately absent in R1.
+	const [scope, setScope] = useState<Scope>('class');
+	const [period, setPeriod] = useState<Period>('week');
+	const board = useLeaderboard(accountId, scope, period);
 
 	const entries: LeaderboardEntry[] = board.data?.entries ?? [];
 	const podium = useMemo(() => entries.slice(0, 3), [entries]);
@@ -95,7 +107,28 @@ export default function BoardScreen() {
 			>
 				<View style={styles.header}>
 					<Text style={styles.headerTitle}>{t('board.title')}</Text>
-					<Text style={styles.period}>{t('board.thisWeek')}</Text>
+					{board.data ? (
+						<Text style={styles.period}>
+							{t('board.updatedAt', {
+								time: new Date(board.data.generatedAt).toLocaleString(),
+							})}
+						</Text>
+					) : null}
+				</View>
+
+				<View style={styles.filters}>
+					<Segmented
+						options={SCOPES}
+						value={scope}
+						onChange={setScope}
+						label={(option) => t(`board.scope.${option}`)}
+					/>
+					<Segmented
+						options={PERIODS}
+						value={period}
+						onChange={setPeriod}
+						label={(option) => t(`board.period.${option}`)}
+					/>
 				</View>
 
 				{entries.length === 0 ? (
@@ -150,7 +183,62 @@ export default function BoardScreen() {
 	);
 }
 
+/**
+ * A two-or-three option switch.
+ *
+ * Segmented rather than a dropdown: with two options a picker costs a tap to
+ * discover what the choices even are, and on a low-end device the modal it
+ * opens is the slowest thing on the screen.
+ */
+function Segmented<T extends string>({
+	options,
+	value,
+	onChange,
+	label,
+}: {
+	options: T[];
+	value: T;
+	onChange: (next: T) => void;
+	label: (option: T) => string;
+}) {
+	return (
+		<View accessibilityRole="tablist" style={styles.segmented}>
+			{options.map((option) => (
+				<Pressable
+					key={option}
+					accessibilityRole="tab"
+					accessibilityState={{ selected: option === value }}
+					onPress={() => onChange(option)}
+					style={[styles.segment, option === value && styles.segmentActive]}
+				>
+					<Text style={[styles.segmentLabel, option === value && styles.segmentLabelActive]}>
+						{label(option)}
+					</Text>
+				</Pressable>
+			))}
+		</View>
+	);
+}
+
 const styles = StyleSheet.create({
+	filters: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md },
+	segmented: {
+		flex: 1,
+		flexDirection: 'row',
+		backgroundColor: palette.ink100,
+		borderRadius: radius.pill,
+		padding: 2,
+	},
+	segment: {
+		flex: 1,
+		minHeight: MIN_TOUCH_TARGET - 8,
+		alignItems: 'center',
+		justifyContent: 'center',
+		borderRadius: radius.pill,
+	},
+	segmentActive: { backgroundColor: palette.surface },
+	segmentLabel: { ...typography.caption, color: palette.ink500 },
+	segmentLabelActive: { color: palette.ink900, fontWeight: '700' },
 	container: { flex: 1, backgroundColor: palette.canvas },
 	scrollView: { padding: spacing.lg, gap: spacing.lg },
 	header: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },

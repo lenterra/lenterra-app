@@ -11,6 +11,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { AppState } from 'react-native';
 
 import {
   ReplayRecorder,
@@ -273,6 +274,23 @@ export function usePlaySession(options: UsePlaySessionOptions) {
     clearResume();
     animator.cancel();
   }, [animator, clearResume]);
+
+  /**
+   * Backgrounding pauses, it does not forfeit (PRD-APP-023).
+   *
+   * A mission is already persisted after every move, so the state is safe. What
+   * this stops is the animation continuing against a screen nobody is looking
+   * at and finishing the mission while the app is in the background — the
+   * student would come back to a result they did not watch happen.
+   */
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (status) => {
+      if (status === 'active') return;
+      animator.cancel();
+      persistResume();
+    });
+    return () => subscription.remove();
+  }, [animator, persistResume]);
 
   return {
     engine,

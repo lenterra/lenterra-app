@@ -1,382 +1,189 @@
-import React from 'react';
+/**
+ * Courses.
+ *
+ * The last screen still running the demo verbatim: "Hi, Firsa" over a gradient
+ * banner reading "Exclusive / Just For / You!", a search field wired to
+ * nothing, and four course cards with hardcoded titles and progress.
+ *
+ * Two things are gone deliberately rather than deferred.
+ *
+ * The banner is a promotional treatment for an offer that does not exist. R1 is
+ * free to pilot schools, there is nothing a student can buy, and a fake
+ * discount on a screen shown to children rehearses a pattern this product
+ * should not teach (PRD-APP-043, PRD-CRS-008).
+ *
+ * The search box is gone until there is enough content for search to be the
+ * faster way to find something. A field that filters four items is furniture.
+ *
+ * Courses are catalog content, not app code (PRD-CRS-001), so this screen is a
+ * reader over what has been published. When nothing has been, it says so
+ * plainly instead of showing invented cards.
+ */
+
+import { useMemo } from 'react';
+import { useRouter } from 'expo-router';
 import {
+  Pressable,
+  RefreshControl,
+  SafeAreaView,
+  ScrollView,
   StyleSheet,
   Text,
   View,
-  Image,
-  ScrollView,
-  TextInput,
-  TouchableOpacity,
-  SafeAreaView,
-  StatusBar,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { useTranslation } from 'react-i18next';
 
-const App: React.FC = () => {
+import { activeAccountId } from '@/src/data/cache/storage';
+import { currentCatalogVersion, readPart } from '@/src/data/cache/catalog';
+import { useProgress } from '@/src/data/queries/hooks';
+import { useSync } from '@/src/features/sync/SyncProvider';
+import { EmptyState, LoadingState } from '@/src/ui/components/ScreenState';
+import {
+  MIN_TOUCH_TARGET,
+  domainColors,
+  palette,
+  radius,
+  spacing,
+  typography,
+  type DomainName,
+} from '@/src/ui/tokens';
+
+/** The catalog's course shape, as published by the content pipeline. */
+interface CourseSummary {
+  id: string;
+  titleKey: string;
+  summaryKey: string;
+  domain: DomainName;
+  lessons: { id: string; titleKey: string; readingMinutes: number }[];
+}
+
+export default function CoursesScreen() {
+  const { t } = useTranslation();
+  const router = useRouter();
+  const accountId = activeAccountId();
+  const sync = useSync();
+  const progress = useProgress(accountId);
+
+  const courses = useMemo<CourseSummary[]>(() => {
+    if (!accountId) return [];
+    const version = currentCatalogVersion(accountId);
+    if (!version) return [];
+    return readPart<CourseSummary[]>(accountId, version, 'courses') ?? [];
+  }, [accountId, sync.catalogProgress]);
+
+  // Lessons completed per course, so a card can show real progress rather
+  // than the demo's fixed percentages.
+  const completed = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const entry of progress.data?.courses ?? []) map[entry.courseId] = entry.lessonsCompleted;
+    return map;
+  }, [progress.data]);
+
+  if (sync.catalogProgress && courses.length === 0) {
+    return (
+      <SafeAreaView style={styles.screen}>
+        <LoadingState label={t('courses.downloading')} />
+      </SafeAreaView>
+    );
+  }
+
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#f5f5f7" />
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.greeting}>Hi, Firsa</Text>
-          <Image
-            source={require('@/assets/images/lenterra-logo.png')}
-            style={styles.logo}
+    <SafeAreaView style={styles.screen}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        refreshControl={
+          <RefreshControl
+            refreshing={progress.isRefetching}
+            onRefresh={() => void progress.refetch()}
           />
-        </View>
+        }
+      >
+        <Text style={styles.title}>{t('courses.title')}</Text>
 
-        {/* Banner */}
-        <LinearGradient
-          colors={['#FFCC70', '#FF9770']}
-          style={styles.bannerContainer}
-        >
-          <View style={styles.bannerContent}>
-            <View>
-              <Text style={styles.bannerTitle}>Exclusive</Text>
-              <Text style={styles.bannerTitle}>Just For</Text>
-              <Text style={styles.bannerTitle}>You!</Text>
-            </View>
-            <View style={styles.booksContainer}>
-              <Image
-                source={require('@/assets/images/book-2.png')}
-                style={styles.bookImage}
-              />
-            </View>
-          </View>
-        </LinearGradient>
+        {courses.length === 0 ? (
+          <EmptyState title={t('courses.emptyTitle')} body={t('courses.emptyBody')} />
+        ) : (
+          courses.map((course) => {
+            const done = completed[course.id] ?? 0;
+            const total = course.lessons.length;
+            const minutes = course.lessons.reduce((sum, lesson) => sum + lesson.readingMinutes, 0);
 
-        {/* Search Bar */}
-        <View style={styles.searchContainer}>
-          <View style={styles.searchBar}>
-            <Image
-              source={require('@/assets/icons/search.png')}
-              style={styles.searchIcon}
-            />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search"
-              placeholderTextColor="#999"
-            />
-          </View>
-        </View>
-
-        {/* Categories */}
-        <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Categories</Text>
-          <View style={styles.categoriesContainer}>
-            <TouchableOpacity style={styles.categoryItem}>
-              <View style={styles.categoryIconContainer}>
-                <Image
-                  source={require('@/assets/icons/advanced-stem.png')}
-                  style={styles.categoryIcon}
-                />
-              </View>
-              <Text style={styles.categoryText}>Advanced{'\n'}STEM</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.categoryItem}>
-              <View style={styles.categoryIconContainer}>
-                <Image
-                  source={require('@/assets/icons/coding.png')}
-                  style={styles.categoryIcon}
-                />
-              </View>
-              <Text style={styles.categoryText}>Coding</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.categoryItem}>
-              <View style={styles.categoryIconContainer}>
-                <Image
-                  source={require('@/assets/icons/intro-to-business.png')}
-                  style={styles.categoryIcon}
-                />
-              </View>
-              <Text style={styles.categoryText}>Intro To{'\n'}Business</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Courses */}
-        <View style={styles.sectionContainer}>
-          <View style={styles.coursesHeader}>
-            <Text style={styles.sectionTitle}>Courses</Text>
-            <TouchableOpacity>
-              <Text style={styles.seeAllText}>See All</Text>
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.coursesGrid}>
-            <TouchableOpacity style={styles.courseCard}>
-              <Image
-                source={require('@/assets/images/physics.png')}
-                style={styles.courseImage}
-              />
-              <View style={styles.courseInfo}>
-                <Text style={styles.courseTitle}>Physics</Text>
-                <View style={styles.courseTag}>
-                  <Text style={styles.courseTagText}>Advanced STEM</Text>
+            return (
+              <Pressable
+                key={course.id}
+                accessibilityRole="button"
+                accessibilityLabel={`${t(course.titleKey)}. ${t('courses.lessonsOf', { done, total })}`}
+                style={styles.card}
+                onPress={() => router.push(`/course/${course.id}`)}
+              >
+                <View style={styles.cardTop}>
+                  <Text style={styles.cardTitle}>{t(course.titleKey)}</Text>
+                  <View style={[styles.tag, { backgroundColor: domainColors[course.domain].bg }]}>
+                    {/* The domain label carries the meaning; colour only
+                        reinforces it (PRD-ACC-013). */}
+                    <Text style={[styles.tagText, { color: domainColors[course.domain].fg }]}>
+                      {t(`progress.domain.${course.domain}`)}
+                    </Text>
+                  </View>
                 </View>
-              </View>
-            </TouchableOpacity>
 
-            <TouchableOpacity style={styles.courseCard}>
-              <Image
-                source={require('@/assets/images/python.png')}
-                style={styles.courseImage}
-              />
-              <View style={styles.courseInfo}>
-                <Text style={styles.courseTitle}>Python</Text>
-                <View style={[styles.courseTag, styles.codingTag]}>
-                  <Text style={[styles.courseTagText, styles.codingTagText]}>Coding</Text>
-                </View>
-              </View>
-            </TouchableOpacity>
+                <Text numberOfLines={2} style={styles.cardSummary}>
+                  {t(course.summaryKey)}
+                </Text>
 
-            <TouchableOpacity style={styles.courseCard}>
-              <Image
-                source={require('@/assets/images/chemistry.png')}
-                style={styles.courseImage}
-              />
-              <View style={styles.courseInfo}>
-                <Text style={styles.courseTitle}>Chemistry</Text>
-                <View style={styles.courseTag}>
-                  <Text style={styles.courseTagText}>Advanced STEM</Text>
-                </View>
-              </View>
-            </TouchableOpacity>
+                <Text style={styles.cardMeta}>
+                  {t('courses.lessonsOf', { done, total })} ·{' '}
+                  {/* An honest reading time, authored per lesson and summed
+                      here rather than guessed from word count (PRD-CRS-010). */}
+                  {t('courses.readingTime', { minutes })}
+                </Text>
 
-            <TouchableOpacity style={styles.courseCard}>
-              <Image
-                source={require('@/assets/images/statistics.png')}
-                style={styles.courseImage}
-              />
-              <View style={styles.courseInfo}>
-                <Text style={styles.courseTitle}>Statistics</Text>
-                <View style={[styles.courseTag, styles.businessTag]}>
-                  <Text style={[styles.courseTagText, styles.businessTagText]}>Intro To Business</Text>
+                <View
+                  accessibilityRole="progressbar"
+                  accessibilityValue={{ min: 0, max: total, now: done }}
+                  style={styles.barTrack}
+                >
+                  <View
+                    style={[
+                      styles.barFill,
+                      { width: total === 0 ? '0%' : `${Math.round((done / total) * 100)}%` },
+                    ]}
+                  />
                 </View>
-              </View>
-            </TouchableOpacity>
-          </View>
-        </View>
+              </Pressable>
+            );
+          })
+        )}
       </ScrollView>
     </SafeAreaView>
   );
-};
-
-export default App;
+}
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f7',
+  screen: { flex: 1, backgroundColor: palette.canvas },
+  content: { padding: spacing.lg, gap: spacing.md },
+  title: { ...typography.title, color: palette.ink900 },
+
+  card: {
+    backgroundColor: palette.surface,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+    gap: spacing.sm,
+    minHeight: MIN_TOUCH_TARGET,
   },
-  header: {
+  cardTop: {
     flexDirection: 'row',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 20,
+    gap: spacing.sm,
   },
-  greeting: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#000',
-  },
-  logo: {
-    width: 40,
-    height: 40,
-  },
-  bannerContainer: {
-    marginHorizontal: 20,
-    marginTop: 20,
-    borderRadius: 16,
-    overflow: 'hidden',
-  },
-  bannerContent: {
-    padding: 20,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  bannerTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#000',
-    lineHeight: 34,
-  },
-  booksContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  bookImage: {
-    width: 120,
-    height: 120,
-    resizeMode: 'contain',
-  },
-  searchContainer: {
-    paddingHorizontal: 20,
-    marginTop: 20,
-  },
-  searchBar: {
-    backgroundColor: '#fff',
-    borderRadius: 30,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  searchIcon: {
-    width: 20,
-    height: 20,
-    marginRight: 10,
-    tintColor: '#999',
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 16,
-    color: '#333',
-  },
-  sectionContainer: {
-    marginTop: 30,
-    paddingHorizontal: 20,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 15,
-    color: '#000',
-  },
-  categoriesContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  categoryItem: {
-    alignItems: 'center',
-    width: '30%',
-  },
-  categoryIconContainer: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    backgroundColor: '#0066FF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  categoryIcon: {
-    width: 30,
-    height: 30,
-    tintColor: '#fff',
-  },
-  categoryText: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  coursesHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  seeAllText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#666',
-  },
-  coursesGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  courseCard: {
-    width: '48%',
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    overflow: 'hidden',
-    marginBottom: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  courseImage: {
-    width: '100%',
-    height: 100,
-    resizeMode: 'cover',
-  },
-  courseInfo: {
-    padding: 12,
-  },
-  courseTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 8,
-    color: '#000',
-  },
-  courseTag: {
-    backgroundColor: '#E9F5E8',
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-    borderRadius: 12,
-    alignSelf: 'flex-start',
-  },
-  codingTag: {
-    backgroundColor: '#E8F0F9',
-  },
-  businessTag: {
-    backgroundColor: '#F0F9E8',
-  },
-  courseTagText: {
-    fontSize: 10,
-    fontWeight: '500',
-    color: '#4CAF50',
-  },
-  codingTagText: {
-    color: '#0066FF',
-  },
-  businessTagText: {
-    color: '#4CAF50',
-  },
-  bottomNav: {
-    flexDirection: 'row',
-    backgroundColor: '#fff',
-    paddingVertical: 10,
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
-  },
-  navItem: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  activeNavItem: {
-    borderTopWidth: 3,
-    borderTopColor: '#0066FF',
-    marginTop: -3,
-  },
-  navIcon: {
-    width: 24,
-    height: 24,
-    marginBottom: 4,
-    tintColor: '#888',
-  },
-  activeNavIcon: {
-    tintColor: '#0066FF',
-  },
-  navText: {
-    fontSize: 10,
-    fontWeight: '500',
-    color: '#888',
-  },
-  activeNavText: {
-    color: '#0066FF',
-  },
+  cardTitle: { ...typography.heading, color: palette.ink900, flexShrink: 1 },
+  cardSummary: { ...typography.body, color: palette.ink700 },
+  cardMeta: { ...typography.caption, color: palette.ink500 },
+
+  tag: { paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: radius.pill },
+  tagText: { ...typography.caption, fontWeight: '700' },
+
+  barTrack: { height: 6, borderRadius: radius.pill, backgroundColor: palette.ink100 },
+  barFill: { height: 6, borderRadius: radius.pill, backgroundColor: palette.blue600 },
 });

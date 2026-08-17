@@ -11,9 +11,10 @@
  * guess — it is the same computation the server will perform, done earlier.
  */
 
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
+	AppState,
 	Pressable,
 	SafeAreaView,
 	ScrollView,
@@ -21,6 +22,7 @@ import {
 	Text,
 	View,
 } from 'react-native';
+import * as ScreenOrientation from 'expo-screen-orientation';
 import { useTranslation } from 'react-i18next';
 
 import type { CongklakMove, CongklakState, Mission } from '@lenterra/core';
@@ -49,6 +51,17 @@ export default function PlayScreen() {
 
 	const [result, setResult] = useState<PlayResult | null>(null);
 	const onFinished = useCallback((r: PlayResult) => setResult(r), []);
+
+	// Landscape for the duration, portrait on the way out (PRD-APP-023). The
+	// board is a wide 2×n grid; in portrait the pits are either unreadable or
+	// too small to hit reliably. Unlocking in the cleanup rather than on unmount
+	// of a child means backing out mid-mission still restores the app.
+	useEffect(() => {
+		void ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
+		return () => {
+			void ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
+		};
+	}, []);
 
 	if (!accountId || !found || !catalogVersion) {
 		// The catalog has not been pulled, or this mission is not in it. Not an

@@ -152,7 +152,16 @@
     "asOf": "As of {{time}}",
     "disabled": "Your teacher has turned the leaderboard off",
     "emptyTitle": "No rankings yet",
-    "emptyBody": "Play one mission to appear here."
+    "emptyBody": "Play one mission to appear here.",
+    "updatedAt": "Updated {{time}}",
+    "scope": {
+      "class": "My class",
+      "school": "My school"
+    },
+    "period": {
+      "week": "This week",
+      "all": "All time"
+    }
   },
   "courses": {
     "title": "Courses",
@@ -160,7 +169,12 @@
     "checkTitle": "Check your understanding",
     "checkPassed": "You have got it",
     "checkFailed": "Not quite — read that part again",
-    "downloadForOffline": "Save for offline reading"
+    "downloadForOffline": "Save for offline reading",
+    "downloading": "Downloading lessons…",
+    "emptyTitle": "No lessons yet",
+    "emptyBody": "Lessons are on their way. In the meantime, the games teach the same skills.",
+    "lessonsOf": "{{done}} of {{total}} lessons",
+    "readingTime": "about {{minutes}} min"
   },
   "profile": {
     "title": "Profile",

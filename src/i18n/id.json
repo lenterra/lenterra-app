@@ -152,7 +152,16 @@
     "asOf": "Data per {{time}}",
     "disabled": "Gurumu sedang menonaktifkan papan peringkat",
     "emptyTitle": "Belum ada peringkat",
-    "emptyBody": "Mainkan satu misi untuk masuk ke papan."
+    "emptyBody": "Mainkan satu misi untuk masuk ke papan.",
+    "updatedAt": "Diperbarui {{time}}",
+    "scope": {
+      "class": "Kelasku",
+      "school": "Sekolahku"
+    },
+    "period": {
+      "week": "Minggu ini",
+      "all": "Sepanjang waktu"
+    }
   },
   "courses": {
     "title": "Materi",
@@ -160,7 +169,12 @@
     "checkTitle": "Cek pemahaman",
     "checkPassed": "Kamu paham!",
     "checkFailed": "Belum, baca lagi bagian ini",
-    "downloadForOffline": "Simpan untuk dibaca offline"
+    "downloadForOffline": "Simpan untuk dibaca offline",
+    "downloading": "Mengunduh pelajaran…",
+    "emptyTitle": "Belum ada pelajaran",
+    "emptyBody": "Pelajaran sedang disiapkan. Sementara itu, permainannya melatih kemampuan yang sama.",
+    "lessonsOf": "{{done}} dari {{total}} pelajaran",
+    "readingTime": "sekitar {{minutes}} menit"
   },
   "profile": {
     "title": "Profil",
