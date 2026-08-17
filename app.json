@@ -4,7 +4,7 @@
     "slug": "lenterra",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/lenterra-logo.png",
+    "icon": "./assets/images/icon.png",
     "scheme": "com.lenterra",
     "userInterfaceStyle": "automatic",
     "ios": {
@@ -17,7 +17,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/lenterra-logo.png",
+        "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
       "package": "com.lenterra",
@@ -39,7 +39,7 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/lenterra-logo.png"
+      "favicon": "./assets/images/icon.png"
     },
     "plugins": [
       "expo-router",
