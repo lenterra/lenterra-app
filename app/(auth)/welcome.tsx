@@ -112,7 +112,7 @@ const styles = StyleSheet.create({
 	actions: { gap: spacing.md, paddingBottom: spacing.xl },
 	primary: {
 		minHeight: MIN_TOUCH_TARGET,
-		backgroundColor: palette.blue600,
+		backgroundColor: palette.blue700,
 		borderRadius: radius.md,
 		alignItems: "center",
 		justifyContent: "center",
@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	secondaryLabel: { ...typography.label, color: palette.blue600 },
+	secondaryLabel: { ...typography.label, color: palette.blue700 },
 	tertiary: { minHeight: MIN_TOUCH_TARGET, alignItems: "center", justifyContent: "center" },
 	tertiaryLabel: { ...typography.label, color: palette.ink500 },
 	disabled: { opacity: 0.6 },

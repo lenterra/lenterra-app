@@ -185,5 +185,5 @@ const styles = StyleSheet.create({
   tagText: { ...typography.caption, fontWeight: '700' },
 
   barTrack: { height: 6, borderRadius: radius.pill, backgroundColor: palette.ink100 },
-  barFill: { height: 6, borderRadius: radius.pill, backgroundColor: palette.blue600 },
+  barFill: { height: 6, borderRadius: radius.pill, backgroundColor: palette.blue700 },
 });

@@ -224,17 +224,17 @@ const styles = StyleSheet.create({
 	// Locked reads as locked without relying on colour: the brief is replaced
 	// by the reason, and the play affordance is absent.
 	missionLocked: { opacity: 0.55 },
-	missionRank: { ...typography.heading, color: palette.blue600, width: 28 },
+	missionRank: { ...typography.heading, color: palette.blue700, width: 28 },
 	missionInfo: { flex: 1, gap: spacing.xs },
 	missionTitle: { ...typography.label, color: palette.ink900 },
 	missionBrief: { ...typography.caption, color: palette.ink500 },
-	play: { ...typography.label, color: palette.blue600 },
+	play: { ...typography.label, color: palette.blue700 },
 
 	download: {
 		minHeight: MIN_TOUCH_TARGET,
 		marginHorizontal: spacing.xl,
 		marginBottom: spacing.xl,
-		backgroundColor: palette.blue600,
+		backgroundColor: palette.blue700,
 		borderRadius: radius.md,
 		alignItems: 'center',
 		justifyContent: 'center',

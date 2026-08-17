@@ -309,7 +309,7 @@ const styles = StyleSheet.create({
 	screen: { flex: 1, backgroundColor: palette.canvas, padding: spacing.lg, gap: spacing.md },
 	header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
 	leave: { ...typography.label, color: palette.ink500 },
-	turn: { ...typography.label, color: palette.blue600 },
+	turn: { ...typography.label, color: palette.blue700 },
 	turnGuest: { color: palette.orange600 },
 
 	chooserBody: { flexGrow: 1, justifyContent: 'center', gap: spacing.lg, padding: spacing.lg },
@@ -332,7 +332,7 @@ const styles = StyleSheet.create({
 
 	primary: {
 		minHeight: MIN_TOUCH_TARGET,
-		backgroundColor: palette.blue600,
+		backgroundColor: palette.blue700,
 		borderRadius: radius.md,
 		alignItems: 'center',
 		justifyContent: 'center',
@@ -344,7 +344,7 @@ const styles = StyleSheet.create({
 		alignItems: 'center',
 		justifyContent: 'center',
 	},
-	secondaryLabel: { ...typography.label, color: palette.blue600 },
+	secondaryLabel: { ...typography.label, color: palette.blue700 },
 
 	resultBody: { flexGrow: 1, justifyContent: 'center', alignItems: 'center', gap: spacing.lg },
 	resultTitle: { ...typography.display, color: palette.ink900 },

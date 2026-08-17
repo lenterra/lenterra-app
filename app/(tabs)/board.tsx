@@ -345,7 +345,7 @@ const styles = StyleSheet.create({
 		gap: spacing.sm,
 	},
 	podiumItem: { alignItems: 'center', gap: spacing.xs, flex: 1 },
-	podiumRank: { ...typography.heading, color: palette.blue600 },
+	podiumRank: { ...typography.heading, color: palette.blue700 },
 	podiumName: { ...typography.label, color: palette.ink900, maxWidth: 96, textAlign: 'center' },
 	podiumPoints: { ...typography.caption, color: palette.ink500 },
 	list: { backgroundColor: palette.surface, borderRadius: radius.lg, overflow: 'hidden' },

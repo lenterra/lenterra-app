@@ -209,7 +209,7 @@ const styles = StyleSheet.create({
 	},
 	primary: {
 		minHeight: MIN_TOUCH_TARGET,
-		backgroundColor: palette.blue600,
+		backgroundColor: palette.blue700,
 		borderRadius: radius.md,
 		alignItems: "center",
 		justifyContent: "center",
@@ -228,5 +228,5 @@ const styles = StyleSheet.create({
 	disabled: { opacity: 0.6 },
 	error: { ...typography.caption, color: palette.danger600 },
 	link: { minHeight: MIN_TOUCH_TARGET, alignItems: "center", justifyContent: "center" },
-	linkLabel: { ...typography.label, color: palette.blue600 },
+	linkLabel: { ...typography.label, color: palette.blue700 },
 });

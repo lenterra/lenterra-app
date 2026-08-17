@@ -274,7 +274,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: 'transparent',
   },
-  unitOwn: { backgroundColor: palette.blue600 },
+  unitOwn: { backgroundColor: palette.blue700 },
   unitEnemy: { backgroundColor: palette.ink500 },
   unitSelected: { borderColor: palette.ink900 },
   // Dashed, because "you could take this one" is a different kind of statement

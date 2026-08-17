@@ -113,7 +113,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
     justifyContent: 'center',
     borderRadius: radius.md,
-    backgroundColor: palette.blue600,
+    backgroundColor: palette.blue700,
   },
   retryLabel: { ...typography.label, color: palette.surface },
   banner: {
@@ -126,6 +126,6 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   bannerText: { ...typography.caption, color: palette.warning600, flexShrink: 1 },
-  bannerAction: { ...typography.caption, color: palette.blue600, fontWeight: '700' },
+  bannerAction: { ...typography.caption, color: palette.blue700, fontWeight: '700' },
   pending: { color: palette.warning600, fontWeight: '700' },
 });

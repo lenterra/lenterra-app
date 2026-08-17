@@ -271,7 +271,7 @@ const styles = StyleSheet.create({
 		paddingVertical: spacing.lg,
 	},
 	summaryItem: { flex: 1, alignItems: 'center', gap: spacing.xs },
-	summaryValue: { ...typography.display, color: palette.blue600 },
+	summaryValue: { ...typography.display, color: palette.blue700 },
 	summaryLabel: { ...typography.caption, color: palette.ink500 },
 	summaryDivider: { width: StyleSheet.hairlineWidth, alignSelf: 'stretch', backgroundColor: palette.ink100 },
 
@@ -307,7 +307,7 @@ const styles = StyleSheet.create({
 	reason: { ...typography.body, color: palette.ink700 },
 	playButton: {
 		minHeight: MIN_TOUCH_TARGET,
-		backgroundColor: palette.blue600,
+		backgroundColor: palette.blue700,
 		borderRadius: radius.md,
 		alignItems: 'center',
 		justifyContent: 'center',

@@ -853,7 +853,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.lg,
   },
   stat: { flex: 1, alignItems: 'center', gap: spacing.xs },
-  statValue: { ...typography.display, color: palette.blue600 },
+  statValue: { ...typography.display, color: palette.blue700 },
   statLabel: { ...typography.caption, color: palette.ink500 },
 
   codeCard: {
@@ -876,7 +876,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     backgroundColor: palette.surface,
   },
-  tabActive: { backgroundColor: palette.blue600 },
+  tabActive: { backgroundColor: palette.blue700 },
   tabLabel: { ...typography.caption, color: palette.ink700 },
   tabLabelActive: { color: palette.surface, fontWeight: '700' },
 
@@ -894,11 +894,11 @@ const styles = StyleSheet.create({
   cardMeta: { ...typography.caption, color: palette.ink500 },
 
   barTrack: { height: 8, borderRadius: radius.pill, backgroundColor: palette.ink100 },
-  barFill: { height: 8, borderRadius: radius.pill, backgroundColor: palette.blue600 },
+  barFill: { height: 8, borderRadius: radius.pill, backgroundColor: palette.blue700 },
 
   chart: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.xs, height: 92 },
   chartColumn: { flex: 1, justifyContent: 'flex-end' },
-  chartBar: { borderRadius: radius.sm, backgroundColor: palette.blue600 },
+  chartBar: { borderRadius: radius.sm, backgroundColor: palette.blue700 },
 
   domainTag: {
     alignSelf: 'flex-start',
@@ -948,12 +948,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     justifyContent: 'center',
     borderRadius: radius.md,
-    backgroundColor: palette.blue600,
+    backgroundColor: palette.blue700,
   },
   codeSubmitLabel: { ...typography.label, color: palette.surface },
 
   linkButton: { minHeight: MIN_TOUCH_TARGET, justifyContent: 'center' },
-  linkLabel: { ...typography.label, color: palette.blue600 },
+  linkLabel: { ...typography.label, color: palette.blue700 },
   declineLabel: { ...typography.label, color: palette.ink500 },
 
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },

@@ -449,7 +449,7 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: palette.canvas },
   content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xxxl },
 
-  eyebrow: { ...typography.caption, color: palette.blue600, fontWeight: '700' },
+  eyebrow: { ...typography.caption, color: palette.blue700, fontWeight: '700' },
   title: { ...typography.title, color: palette.ink900 },
   meta: { ...typography.caption, color: palette.ink500 },
   sectionTitle: { ...typography.heading, color: palette.ink900 },
@@ -485,7 +485,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: spacing.lg,
   },
-  gameLinkLabel: { ...typography.label, color: palette.blue600 },
+  gameLinkLabel: { ...typography.label, color: palette.blue700 },
 
   check: { gap: spacing.md, marginTop: spacing.lg },
   item: {
@@ -510,7 +510,7 @@ const styles = StyleSheet.create({
   optionSelected: { borderColor: palette.blue600, backgroundColor: palette.blue050 },
   optionLabel: { ...typography.body, color: palette.ink700, flexShrink: 1 },
   optionLabelSelected: { color: palette.ink900, fontWeight: '600' },
-  orderMark: { ...typography.label, color: palette.blue600, width: 20, textAlign: 'center' },
+  orderMark: { ...typography.label, color: palette.blue700, width: 20, textAlign: 'center' },
 
   verdictRight: {
     backgroundColor: palette.success100,
@@ -534,7 +534,7 @@ const styles = StyleSheet.create({
 
   primary: {
     minHeight: MIN_TOUCH_TARGET,
-    backgroundColor: palette.blue600,
+    backgroundColor: palette.blue700,
     borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
@@ -547,5 +547,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  secondaryLabel: { ...typography.label, color: palette.blue600 },
+  secondaryLabel: { ...typography.label, color: palette.blue700 },
 });

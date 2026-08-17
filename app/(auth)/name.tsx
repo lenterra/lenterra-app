@@ -114,7 +114,7 @@ const styles = StyleSheet.create({
 	},
 	primary: {
 		minHeight: MIN_TOUCH_TARGET,
-		backgroundColor: palette.blue600,
+		backgroundColor: palette.blue700,
 		borderRadius: radius.md,
 		alignItems: "center",
 		justifyContent: "center",

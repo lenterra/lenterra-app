@@ -14,6 +14,23 @@
 export const palette = {
   /** The demo's primary blue. */
   blue600: '#2E8DE1',
+  /**
+   * The same blue, dark enough to carry text.
+   *
+   * `#2E8DE1` on white is 3.49:1. That clears the 3:1 a non-text element needs
+   * — a border, a focus ring, a filled chart area — and falls short of the
+   * 4.5:1 body text needs, in both directions: blue text on white and white
+   * text on a blue button fail identically.
+   *
+   * `#1B71BD` clears 4.5:1 against white, the canvas, and every tinted surface
+   * in this palette. Verified by computing the ratios rather than by a gate:
+   * the dashboard has axe in CI and React Native has no equivalent, so this one
+   * is checked by arithmetic and by looking at it.
+   *
+   * The device this matters on is a cheap phone in a classroom with the
+   * shutters open.
+   */
+  blue700: '#1B71BD',
   blue500: '#4A9FE8',
   blue100: '#D1E5FF',
   blue050: '#EEF5FF',
