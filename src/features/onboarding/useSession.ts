@@ -60,7 +60,7 @@ export function useSession(onboarded?: boolean): SessionState & {
    *
    * Returns the number of unsynced items so the UI can say exactly what is at
    * stake — "3 results have not been sent yet, they stay on this phone" — rather
-   * than a generic warning nobody reads (PRD-ONB-015).
+   * than a generic warning nobody reads.
    */
   const signOut = useCallback(() => {
     const accountId = state.accountId;

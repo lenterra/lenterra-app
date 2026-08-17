@@ -54,10 +54,9 @@ export function setLocale(locale: Locale): void {
  *
  * Mission titles, briefs, hints and failure diagnostics are *content*, not app
  * strings: they ship with the catalog so a new mission can reach a student
- * without an app release (PRD-CNT-007). They still have to reach i18next,
+ * without an app release. They still have to reach i18next,
  * because `t(mission.titleKey)` is how a screen renders one — without this
- * every mission on the games tab shows the literal key
- * `mission.congklak.m01.title`.
+ * every mission on the games tab shows the literal key `mission.congklak.m01.title`.
  *
  * Merged rather than replacing the bundle, so a catalog that omits a key falls
  * back to the built-in strings instead of blanking the UI.

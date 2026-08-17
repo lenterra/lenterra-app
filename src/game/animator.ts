@@ -26,7 +26,7 @@ export interface AnimatorOptions {
   stepMs?: number;
   /**
    * A single animation must never block input for more than this.
-   * Long chains accelerate rather than queue linearly (PRD-GAME-006).
+   * Long chains accelerate rather than queue linearly.
    */
   maxTotalMs?: number;
   onFrame: (frame: AnimationFrame) => void;

@@ -3,8 +3,8 @@
  *
  * The route `courses.tsx` has been linking to since the screen was rebuilt.
  * Everything it needs is in the catalog cache, so it opens with no network
- * (PRD-CRS-002) and shows real lesson-level progress rather than a percentage
- * nobody computed (PRD-CRS-007).
+ * and shows real lesson-level progress rather than a percentage
+ * nobody computed.
  */
 
 import { useMemo } from 'react';

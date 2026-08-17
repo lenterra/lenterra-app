@@ -211,7 +211,7 @@ export function usePlaySession(options: UsePlaySessionOptions) {
 
       if (!engine.isLegal(active.state, parsed)) {
         // Rejections are diagnostic, not a buzz. Benteng in particular has to
-        // state both freshness numbers (PRD-GAME-012).
+        // state both freshness numbers.
         const detail = describeRejection(engine, active.state, parsed);
         setRejection(detail);
         return detail;
@@ -291,7 +291,7 @@ export function usePlaySession(options: UsePlaySessionOptions) {
   }, [animator, clearResume]);
 
   /**
-   * Backgrounding pauses, it does not forfeit (PRD-APP-023).
+   * Backgrounding pauses, it does not forfeit.
    *
    * A mission is already persisted after every move, so the state is safe. What
    * this stops is the animation continuing against a screen nobody is looking

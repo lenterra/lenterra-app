@@ -3,14 +3,14 @@
  *
  * Text-first and entirely offline. There is no video and no audio anywhere in
  * R1 — a single video would consume a month of the 5 MB weekly data budget the
- * target student actually has (PRD-CRS-003), so the decision is a constraint,
+ * target student actually has, so the decision is a constraint,
  * not a preference.
  *
  * The check grades locally and says the result is provisional, which is the
  * honest description: the server re-grades it and the server's score is what
  * moves mastery. A wrong answer shows the authored explanation naming the
  * misconception, because "incorrect" on its own teaches a student nothing they
- * did not already know (PRD-CRS-005).
+ * did not already know.
  */
 
 import { useMemo, useState } from 'react';
@@ -144,8 +144,7 @@ function Reader({
 }
 
 // ---------------------------------------------------------------------------
-// Blocks
-// ---------------------------------------------------------------------------
+// Blocks ---------------------------------------------------------------------------
 
 /**
  * One piece of a lesson.
@@ -188,8 +187,8 @@ function Block({
       );
 
     case 'image':
-      // Images are authored but not shipped in R1 (PRD-CRS-003 caps the whole
-      // catalogue at 8 MB and nothing has been drawn yet). The alt text is
+      // Images are authored but not shipped in R1: the catalogue is capped at
+      // 8 MB and nothing has been drawn yet. The alt text is
       // required for exactly this reason: it is the lesson when the picture is
       // not there.
       return (
@@ -218,8 +217,7 @@ const calloutTone = StyleSheet.create({
 });
 
 // ---------------------------------------------------------------------------
-// Check
-// ---------------------------------------------------------------------------
+// Check ---------------------------------------------------------------------------
 
 function Check({
   accountId,

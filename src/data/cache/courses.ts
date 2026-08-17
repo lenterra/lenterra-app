@@ -1,7 +1,7 @@
 /**
  * Reading courses out of the catalog cache.
  *
- * Everything here works offline (PRD-CRS-002). The course index and every
+ * Everything here works offline. The course index and every
  * lesson body arrive during the first connected session after enrolment — the
  * catalog sync pulls all available parts, so a student who has synced once has
  * the whole catalogue and never meets a lesson that needs the network to open.
@@ -54,7 +54,7 @@ export function lessonsFor(accountId: string, courseId: string, version?: string
  *
  * Lesson ids are `<courseId>.<slug>`, so the course is recoverable from the id
  * — which is what lets a struggle offer and a `gameLink` both address a lesson
- * directly rather than routing through the course index (PRD-CRS-006).
+ * directly rather than routing through the course index.
  */
 export function findLesson(
   accountId: string,
@@ -80,7 +80,7 @@ export function findLesson(
 }
 
 /**
- * Where to resume a course (PRD-CRS-007).
+ * Where to resume a course.
  *
  * The first lesson the student has not completed, or the last one when they
  * have finished — returning to a finished course should open something, not
@@ -106,7 +106,7 @@ export function checkOf(lesson: Lesson): CheckPublic | null {
 }
 
 /**
- * The lesson to offer a student stuck on a node (PRD-CRS-006).
+ * The lesson to offer a student stuck on a node.
  *
  * Searches every published course, because the node a student is failing is not
  * necessarily in the course they last opened — most nodes are taught in one

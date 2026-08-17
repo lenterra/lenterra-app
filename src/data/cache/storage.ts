@@ -95,7 +95,7 @@ export function knownAccountIds(): string[] {
  *
  * Clears the session token and the active-account pointer, and **keeps the
  * outbox**. A student who signs out on a borrowed phone before their work has
- * synced has not agreed to lose it (PRD-ONB-015).
+ * synced has not agreed to lose it.
  */
 export function signOut(accountId: string): void {
   accountStorage(accountId).delete(ACCOUNT_KEYS.session);

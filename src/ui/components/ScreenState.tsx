@@ -9,7 +9,7 @@
  * Two rules these encode:
  *
  *  - **Cached data never shows a spinner.** A screen that has data renders it
- *    and refreshes behind it (PRD-ACC-018).
+ *    and refreshes behind it.
  *  - **Offline is not an error.** It is a state the product is designed for,
  *    and saying "something went wrong" when a student is simply on a bus
  *    teaches them the app is broken.

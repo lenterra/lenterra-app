@@ -21,8 +21,7 @@ import { config } from '../../lib/config';
 import { queryKeys } from './client';
 
 // ---------------------------------------------------------------------------
-// Schemas
-// ---------------------------------------------------------------------------
+// Schemas ---------------------------------------------------------------------------
 
 const BandSchema = z.enum(['not_started', 'emerging', 'developing', 'proficient', 'mastered']);
 
@@ -132,7 +131,7 @@ const LeaderboardSchema = z.object({
   scope: z.string(),
   period: z.string(),
   // What the client displays when it is showing a cached board offline
-  // (PRD-APP-032). A leaderboard with no timestamp is a lie by omission.
+  //. A leaderboard with no timestamp is a lie by omission.
   generatedAt: z.string(),
   entries: z.array(
     z.object({
@@ -171,7 +170,7 @@ const ClassGoalSchema = z.object({
 export type ClassGoal = z.infer<typeof ClassGoalSchema>;
 
 /**
- * The class's shared goal (PRD-SOC-009).
+ * The class's shared goal.
  *
  * Fetched separately from the leaderboard rather than folded into it, because
  * a teacher who switches the ranking off is switching off competition — and
@@ -194,8 +193,7 @@ const PointsSchema = z.object({
 });
 
 // ---------------------------------------------------------------------------
-// Hooks
-// ---------------------------------------------------------------------------
+// Hooks ---------------------------------------------------------------------------
 
 export function useBootstrap(accountId: string | null): UseQueryResult<Bootstrap> {
   return useQuery({
@@ -252,7 +250,7 @@ const CertificateSchema = z.object({
       id: z.string(),
       definitionId: z.string(),
       issuedAt: z.string(),
-      // What the certificate is allowed to say about itself (PRD-RWD-013):
+      // What the certificate is allowed to say about itself:
       // which skills, how many validated attempts, over what period.
       evidenceSummary: z.object({
         nodes: z.array(z.string()),

@@ -116,7 +116,7 @@ export default function GamesScreen() {
 						missions={ladder.missions}
 						// Highest rank the student has evidence for, +1 unlocked.
 						// A recommendation is not a gate: everything at or below the
-						// frontier stays playable (PRD-LRN-007).
+						// frontier stays playable.
 						unlockedThrough={unlockedThrough(ladder.missions, progress.data?.mastery ?? [])}
 						onOpen={(missionId) => router.push(`/play/${missionId}`)}
 					/>

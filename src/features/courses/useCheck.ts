@@ -2,10 +2,10 @@
  * Answering a check for understanding.
  *
  * Graded on the device the moment the student submits, so a result and an
- * explanation appear with no network involved (PRD-CRS-002, PRD-CRS-005). That
+ * explanation appear with no network involved. That
  * grade is provisional and says so: the submission goes to the outbox, the
  * server re-grades it against the answer key, and the server's score is the one
- * that moves mastery (PRD-CRS-004).
+ * that moves mastery.
  *
  * Grading uses the core's own function, the same one the server calls. Writing
  * a second one here would eventually disagree with it, and the student would
@@ -36,7 +36,7 @@ export interface UseCheck {
   /** Every item has an answer, so submitting is meaningful. */
   complete: boolean;
   result: CheckResult | null;
-  /** Which attempt this is. Retries are recorded, not hidden (PRD-CRS-005). */
+  /** Which attempt this is. Retries are recorded, not hidden. */
   attemptNumber: number;
   submit: () => void;
   /** Clear the result and the answers so the student can try again after reading. */

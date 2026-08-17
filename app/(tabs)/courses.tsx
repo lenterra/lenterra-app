@@ -10,12 +10,12 @@
  * The banner is a promotional treatment for an offer that does not exist. R1 is
  * free to pilot schools, there is nothing a student can buy, and a fake
  * discount on a screen shown to children rehearses a pattern this product
- * should not teach (PRD-APP-043, PRD-CRS-008).
+ * should not teach.
  *
  * The search box is gone until there is enough content for search to be the
  * faster way to find something. A field that filters four items is furniture.
  *
- * Courses are catalog content, not app code (PRD-CRS-001), so this screen is a
+ * Courses are catalog content, not app code, so this screen is a
  * reader over what has been published. When nothing has been, it says so
  * plainly instead of showing invented cards.
  */
@@ -120,7 +120,7 @@ export default function CoursesScreen() {
                   <Text style={styles.cardTitle}>{t(course.titleKey)}</Text>
                   <View style={[styles.tag, { backgroundColor: domainColors[course.domain].bg }]}>
                     {/* The domain label carries the meaning; colour only
-                        reinforces it (PRD-ACC-013). */}
+                        reinforces it. */}
                     <Text style={[styles.tagText, { color: domainColors[course.domain].fg }]}>
                       {t(`progress.domain.${course.domain}`)}
                     </Text>
@@ -134,7 +134,7 @@ export default function CoursesScreen() {
                 <Text style={styles.cardMeta}>
                   {t('courses.lessonsOf', { done, total })} ·{' '}
                   {/* An honest reading time, authored per lesson and summed
-                      here rather than guessed from word count (PRD-CRS-010). */}
+                      here rather than guessed from word count. */}
                   {t('courses.readingTime', { minutes })}
                 </Text>
 

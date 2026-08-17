@@ -4,7 +4,7 @@
  * The demo had three arrays of celebrity names in `profile.tsx` and printed
  * the student's raw `0x…` wallet address as "Your ID". Both are replaced here:
  * the graph is Nakama's, and the shareable identifier is a class-scoped friend
- * code (PRD-SOC-011).
+ * code.
  *
  * The server enforces the rules — same-school only, no adding by username — in
  * the `beforeAddFriends` hook, because a client-side check is bypassed by
@@ -102,7 +102,7 @@ export function emptyFriendLists(): FriendLists {
  * Returns null both when the code does not exist and when it belongs to
  * another school — the server deliberately does not distinguish them, because
  * a distinguishable answer turns this into a way to enumerate other schools'
- * children (PRD-SOC-010).
+ * children.
  */
 export async function findByCode(
   accountId: string,
@@ -135,7 +135,7 @@ export async function removeFriend(accountId: string, userId: string): Promise<v
  *
  * Separate from removing, and deliberately so: a student who blocks someone
  * has said something stronger than "not friends", and a blocked user must not
- * be able to send a fresh request (PRD-SOC-014).
+ * be able to send a fresh request.
  */
 export async function blockUser(accountId: string, userId: string): Promise<void> {
   const session = await ensureSession(accountId);

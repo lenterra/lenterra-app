@@ -114,7 +114,7 @@ jobs:
         working-directory: android
         run: ./gradlew assembleRelease --no-daemon
 
-      # 40 MB per architecture (PRD-ACC-006). The budget fails the build with
+      # 40 MB per architecture. The budget fails the build with
       # both numbers rather than being measured after somebody notices the app
       # got bigger (TRD-PERF-003, TRD-PERF-009).
       - name: size budget

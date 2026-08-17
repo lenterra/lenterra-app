@@ -12,7 +12,7 @@
  *  - **Points, never mastery.** Ranking children by inferred ability is a
  *    different and more harmful product (10-03).
  *  - **When the data is from.** A cached board shown offline must say so, or a
- *    student reads a stale standing as current (PRD-APP-032).
+ *    student reads a stale standing as current.
  *  - **When a teacher has switched it off.** Not an empty board, which looks
  *    like nobody has played.
  */
@@ -57,7 +57,7 @@ export default function BoardScreen() {
 	const { t } = useTranslation();
 	const accountId = activeAccountId();
 	// Class and week are the defaults because they are the scope and period a
-	// student can actually influence today (PRD-SOC-001, PRD-SOC-003). Regional
+	// student can actually influence today. Regional
 	// and national are deliberately absent in R1.
 	const [scope, setScope] = useState<Scope>('class');
 	const [period, setPeriod] = useState<Period>('week');
@@ -274,7 +274,7 @@ function Segmented<T extends string>({
 }
 
 /**
- * The class's shared goal (PRD-SOC-009).
+ * The class's shared goal.
  *
  * The only thing on this screen that is not a ranking. Everything else here is
  * zero-sum — helping a classmate can only cost you position — and this is the

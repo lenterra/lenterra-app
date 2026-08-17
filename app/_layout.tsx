@@ -1,7 +1,7 @@
 /**
  * App entry.
  *
- * Authentication moves here from the profile tab (PRD-APP-057). Today
+ * Authentication moves here from the profile tab. Today
  * `profile.tsx` gates itself on `!!account` while `index`, `games`, `board` and
  * `courses` render regardless — so a signed-out user is shown four screens of
  * fabricated points, ranks and friends. Gating at the root is what makes

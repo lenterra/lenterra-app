@@ -11,7 +11,7 @@ import NetInfo, { type NetInfoState } from '@react-native-community/netinfo';
 
 export interface Connectivity {
   online: boolean;
-  /** Metered connections change what we are willing to download (PRD-ACC-007). */
+  /** Metered connections change what we are willing to download. */
   metered: boolean;
   type: string;
 }

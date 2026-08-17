@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Download-size budget for the Android build (PRD-ACC-006, TRD-PERF-003).
+// Download-size budget for the Android build (TRD-PERF-003).
 //
 // 40 MB, and the number is not arbitrary. The target student buys data by the
 // megabyte on a prepaid plan, so a 60 MB download is not "a bit slower" — it is
@@ -22,10 +22,11 @@ const BUDGET_BYTES = 40 * 1024 * 1024;
 /**
  * Ceiling for a universal APK, which is not what ships.
  *
- * PRD-ACC-006 requires per-architecture splits. A universal build carries every
- * ABI's native libraries — for a project with crypto and wallet dependencies
- * that is most of the download — so it is measured against a separate, larger
- * number and reported as the wrong artefact rather than silently passed.
+ * The download budget requires per-architecture splits. A universal build
+ * carries every ABI's native libraries — for a project with crypto and wallet
+ * dependencies that is most of the download — so it is measured against a
+ * separate, larger number and reported as the wrong artefact rather than
+ * silently passed.
  */
 const UNIVERSAL_BUDGET_BYTES = 90 * 1024 * 1024;
 
@@ -86,7 +87,7 @@ if (!sawSplit) {
   // Not a failure on its own — a local one-off build is legitimately universal
   // — but it means the number above is not the number a student downloads.
   console.warn(
-    '\n! no per-architecture build found. PRD-ACC-006 requires splits;\n' +
+    '\n! no per-architecture build found. The download budget requires splits;\n' +
       '  a universal APK makes every student download every architecture.',
   );
 }

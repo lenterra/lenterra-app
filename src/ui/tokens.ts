@@ -60,7 +60,7 @@ export const palette = {
  *
  * Colour is never the only channel: every place these appear also carries the
  * label, because a colour-blind student on a cheap panel in daylight has to be
- * able to read the same information (PRD-ACC-013).
+ * able to read the same information.
  */
 export const domainColors = {
   computation: { bg: '#FFCECE', fg: '#FF5757' },

@@ -48,7 +48,7 @@ const MAX_BATCH_BYTES = 1_800_000;
  *
  * Above this the update waits for wifi and the student is told there is one,
  * rather than a week's data allowance disappearing into a background fetch
- * (PRD-ACC-007, TRD-PERF-005).
+ * (TRD-PERF-005).
  */
 const METERED_AUTO_LIMIT_BYTES = 500_000;
 
@@ -146,8 +146,7 @@ export function catalogHeld(): boolean {
 }
 
 // ---------------------------------------------------------------------------
-// Sync
-// ---------------------------------------------------------------------------
+// Sync ---------------------------------------------------------------------------
 
 export interface SyncCatalogOptions {
   onProgress?: (progress: CatalogProgress) => void;

@@ -61,11 +61,11 @@ export default function PlayScreen() {
 	const [result, setResult] = useState<PlayResult | null>(null);
 	// Null until the student has chosen. Hot-seat is never assumed: a mission
 	// started in the wrong mode either scores a friend's play as the student's
-	// or takes a friend's turns away (PRD-APP-025).
+	// or takes a friend's turns away.
 	const [mode, setMode] = useState<'solo' | 'hotseat' | null>(null);
 	const onFinished = useCallback((r: PlayResult) => setResult(r), []);
 
-	// Landscape for the duration, portrait on the way out (PRD-APP-023). The
+	// Landscape for the duration, portrait on the way out. The
 	// board is a wide 2×n grid; in portrait the pits are either unreadable or
 	// too small to hit reliably. Unlocking in the cleanup rather than on unmount
 	// of a child means backing out mid-mission still restores the app.

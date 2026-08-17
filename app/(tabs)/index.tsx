@@ -190,7 +190,7 @@ export default function HomeScreen() {
 				{/*
 					A student who has failed the same node repeatedly is offered the
 					lesson covering it, not a fourth attempt at the mission that has
-					already beaten them three times (PRD-CRS-006, PRD-ADPT-006). It
+					already beaten them three times. It
 					opens on the lesson itself rather than the course index — the
 					point is to answer the question they are stuck on.
 				*/}

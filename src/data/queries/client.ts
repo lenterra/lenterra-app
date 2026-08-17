@@ -3,7 +3,7 @@
  *
  * `gcTime: Infinity` plus MMKV persistence is what makes cached data render
  * instantly with no spinner, across app restarts and not just within a session
- * (PRD-ACC-018). On a device that is offline more often than not, a spinner
+ *. On a device that is offline more often than not, a spinner
  * over data we already have is a bug.
  */
 

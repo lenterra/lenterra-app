@@ -4,7 +4,7 @@
  * Rendering only — the rules live in `@lenterra/core`, which the server runs
  * too, so there is one implementation of what a move does.
  *
- * **Freshness is the whole game** (PRD-GAME-013). A unit may capture another
+ * **Freshness is the whole game**. A unit may capture another
  * only if its own freshness is strictly lower, so a student who misreads the
  * numbers is not making a strategic mistake, they are playing a different game.
  * Three things follow, and none of them is decoration:
@@ -16,10 +16,10 @@
  *    treats as 4.
  *  - Selecting a unit marks which enemies it can *actually* take. Working that
  *    out is the skill; hiding it behind a rejected move is a buzzer, not a
- *    lesson (PRD-GAME-012).
+ *    lesson.
  *
  * Prisoners are drawn at the captor's base rather than removed, because
- * "captured" has to look like a place a unit can be rescued from (PRD-GAME-014).
+ * "captured" has to look like a place a unit can be rescued from.
  */
 
 import { useMemo } from 'react';
@@ -277,7 +277,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   // A reachable square is outlined rather than tinted, so it stays visible on
-  // a washed-out panel in daylight (PRD-ACC-016).
+  // a washed-out panel in daylight.
   target: { borderWidth: 2, borderColor: palette.blue600 },
   baseMark: { ...typography.body, color: palette.ink500 },
 

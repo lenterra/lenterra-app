@@ -1,7 +1,7 @@
 /**
  * Lesson progress, kept on the device.
  *
- * The server is the durable record — it survives a reinstall (PRD-CRS-007) —
+ * The server is the durable record — it survives a reinstall —
  * but it returns a *count* of lessons completed per course, not which ones. A
  * count cannot answer "where do I resume", and a student two weeks offline
  * needs that answer without asking anyone.

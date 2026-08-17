@@ -16,12 +16,12 @@
  *
  *  - **Every number comes from the server**, so the profile and the board
  *    cannot contradict each other about the same student.
- *  - **Mastery is shown as bands, never numbers** (PRD-ADPT-005). The contract
+ *  - **Mastery is shown as bands, never numbers**. The contract
  *    does not carry a value, so the screen is structurally incapable of it.
  *  - **The identity a student shares is a friend code**, not the `0x…` wallet
- *    address the demo printed as "Your ID" (PRD-SOC-011).
+ *    address the demo printed as "Your ID".
  *  - **Authentication is not here.** It happens at app entry, so "signed out"
- *    means the same thing on every screen (PRD-APP-057).
+ *    means the same thing on every screen.
  */
 
 import { useMemo, useState } from 'react';
@@ -280,8 +280,7 @@ function FriendCode({ code, accountId }: { code: string; accountId: string | nul
 }
 
 // ---------------------------------------------------------------------------
-// Record
-// ---------------------------------------------------------------------------
+// Record ---------------------------------------------------------------------------
 
 function RecordTab({ progress }: { progress: Progress | undefined }) {
   const { t } = useTranslation();
@@ -378,7 +377,7 @@ function StatisticsTab({ progress }: { progress: Progress | undefined }) {
       )}
 
       {/*
-        Bands per node, grouped by domain (PRD-APP-053). No percentages: the
+        Bands per node, grouped by domain. No percentages: the
         underlying value is a probability estimate, and asking a 14-year-old to
         interpret one invites both comparison and gaming.
       */}
@@ -398,7 +397,7 @@ function StatisticsTab({ progress }: { progress: Progress | undefined }) {
                 <Text style={styles.nodeName}>{t(`skill.${node.skillNodeId}`)}</Text>
                 <View style={styles.nodeRight}>
                   {/* The band name carries the meaning; colour only
-                      reinforces it (PRD-ACC-013). */}
+                      reinforces it. */}
                   <View
                     style={[styles.bandChip, { backgroundColor: bandColors[node.band].bg }]}
                   >
@@ -420,8 +419,7 @@ function StatisticsTab({ progress }: { progress: Progress | undefined }) {
 }
 
 // ---------------------------------------------------------------------------
-// Friends
-// ---------------------------------------------------------------------------
+// Friends ---------------------------------------------------------------------------
 
 function FriendsTab({ accountId }: { accountId: string | null }) {
   const { t } = useTranslation();
@@ -489,7 +487,7 @@ function FriendsTab({ accountId }: { accountId: string | null }) {
                 <Text style={styles.linkLabel}>{t('common.accept')}</Text>
               </Pressable>
               {/* Refusing is as prominent as accepting. A request a child
-                  cannot decline is not a request (PRD-SOC-012). */}
+                  cannot decline is not a request. */}
               <Pressable
                 accessibilityRole="button"
                 onPress={() =>
@@ -592,7 +590,7 @@ function CodeInput({
  *
  * Offered together because a child who has been bullied should not have to
  * work out which one they wanted. Blocking protects them now; reporting is
- * what reaches an adult (PRD-SOC-014, TRD-SEC-016).
+ * what reaches an adult (TRD-SEC-016).
  */
 function SafetySheet({
   friend,
@@ -750,7 +748,7 @@ function CertificateCard({
       </Text>
 
       {/*
-        A certificate has to state its own limits (PRD-RWD-013). Naming the
+        A certificate has to state its own limits. Naming the
         evidence behind it — how many validated attempts, over how long — is
         what keeps it from being read as a qualification it is not.
       */}
@@ -792,8 +790,7 @@ function CertificateCard({
 }
 
 // ---------------------------------------------------------------------------
-// Rewards
-// ---------------------------------------------------------------------------
+// Rewards ---------------------------------------------------------------------------
 
 /**
  * What points are for.
@@ -850,8 +847,7 @@ function OwnTitle({ accountId, itemId }: { accountId: string | null; itemId: str
 }
 
 // ---------------------------------------------------------------------------
-// Settings
-// ---------------------------------------------------------------------------
+// Settings ---------------------------------------------------------------------------
 
 function Settings({ accountId }: { accountId: string | null }) {
   const { t, i18n } = useTranslation();
@@ -861,7 +857,7 @@ function Settings({ accountId }: { accountId: string | null }) {
 
   const confirmSignOut = () => {
     // The warning is the point: signing out on a borrowed phone with work
-    // still queued must not silently look like a clean exit (PRD-ONB-015).
+    // still queued must not silently look like a clean exit.
     const body =
       sync.pending > 0
         ? t('profile.signOutPendingBody', { count: sync.pending })
