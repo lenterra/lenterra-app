@@ -75,7 +75,7 @@ export function OfflineNotice({
   if (pending === 0) return null;
 
   return (
-    <View style={styles.banner}>
+    <View testID="offline-notice" style={styles.banner}>
       <Text style={styles.bannerText}>
         {syncing ? t('sync.syncing') : t('sync.pendingCount', { count: pending })}
       </Text>

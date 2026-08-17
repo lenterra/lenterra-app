@@ -116,10 +116,26 @@ export function lessonCovering(accountId: string, node: string): Lesson | null {
   const version = currentCatalogVersion(accountId);
   if (!version) return null;
 
+  // Compared across every course rather than stopping at the first one that
+  // mentions the node. Most nodes are taught in one course and practised in
+  // another, so "first match" reliably returns the lesson that touches the idea
+  // in passing instead of the one that is about it.
+  let best: Lesson | null = null;
+  let bestRank = Number.MAX_SAFE_INTEGER;
+
   for (const course of coursesFor(accountId, version)) {
     if (!course.skillNodes.includes(node as SkillNodeId)) continue;
+
     const found = lessonForNode(lessonsFor(accountId, course.id, version), node as SkillNodeId);
-    if (found) return found;
+    if (!found) continue;
+
+    // Nodes are emitted heaviest first, so a lower position means the lesson
+    // leans on this node more.
+    const rank = found.skillNodes.indexOf(node as SkillNodeId);
+    if (rank >= 0 && rank < bestRank) {
+      best = found;
+      bestRank = rank;
+    }
   }
-  return null;
+  return best;
 }

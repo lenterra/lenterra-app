@@ -60,11 +60,12 @@ export default function NameScreen() {
 	}
 
 	return (
-		<View style={styles.screen}>
+		<View testID="name-screen" style={styles.screen}>
 			<Text style={styles.title}>{t("auth.nameLabel")}</Text>
 			<Text style={styles.help}>{t("auth.nameHelp")}</Text>
 
 			<TextInput
+				testID="display-name-input"
 				accessibilityLabel={t("auth.nameLabel")}
 				style={styles.input}
 				value={name}
@@ -75,6 +76,7 @@ export default function NameScreen() {
 			/>
 
 			<Pressable
+				testID="name-submit"
 				accessibilityRole="button"
 				style={[styles.primary, busy && styles.disabled]}
 				disabled={busy || name.trim().length < 2}

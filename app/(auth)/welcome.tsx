@@ -48,7 +48,7 @@ export default function WelcomeScreen() {
 	}
 
 	return (
-		<View style={styles.screen}>
+		<View testID="welcome-screen" style={styles.screen}>
 			<View style={styles.hero}>
 				<Text style={styles.title}>{t("auth.welcomeTitle")}</Text>
 				<Text style={styles.body}>{t("auth.welcomeBody")}</Text>
@@ -57,6 +57,7 @@ export default function WelcomeScreen() {
 			<View style={styles.actions}>
 				<Pressable
 					accessibilityRole="button"
+					testID="sign-in-email"
 					accessibilityLabel={t("auth.signInEmail")}
 					style={[styles.primary, busy && styles.disabled]}
 					disabled={busy}
@@ -82,6 +83,7 @@ export default function WelcomeScreen() {
 				<Pressable
 					accessibilityRole="button"
 					style={styles.tertiary}
+					testID="join-with-class-code"
 					onPress={() => router.push("/(auth)/join")}
 				>
 					<Text style={styles.tertiaryLabel}>{t("auth.joinWithCode")}</Text>

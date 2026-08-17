@@ -1,0 +1,129 @@
+# CI for the student app.
+#
+# Every gate here exists because of something that would otherwise reach a
+# student silently: a type error that only shows on a screen nobody opened, a
+# bundle that grew past what somebody paying by the megabyte will download, a
+# dependency advisory nobody read, or a secret committed and then merely deleted
+# from the next diff.
+#
+# The E2E job is deliberately not here. It needs an Android emulator, takes
+# minutes rather than seconds, and TRD-TEST-003 asks for it on release
+# candidates rather than every push — see e2e.yml.
+
+name: ci
+
+on:
+  push:
+    branches: [master, main, staging]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: typecheck, tests, budgets
+    runs-on: ubuntu-latest
+
+    env:
+      # The app refuses to start without these, by design. CI supplies obvious
+      # placeholders: nothing here reaches a network, and a real client id in a
+      # workflow file would be a real client id in a public repository.
+      EXPO_PUBLIC_ENV: development
+      EXPO_PUBLIC_THIRDWEB_CLIENT_ID: ci-placeholder
+      EXPO_PUBLIC_NAKAMA_HOST: localhost
+      EXPO_PUBLIC_NAKAMA_SERVER_KEY: defaultkey
+      EXPO_PUBLIC_VERIFIER_URL: http://localhost:8787
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Secret scanning needs history to scan, not just the tip.
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - run: npm ci
+
+      - name: typecheck
+        run: npm run typecheck
+
+      - name: lint
+        run: npm run lint
+
+      # The floor is a ratchet rather than a target; jest.config.js explains why
+      # it is set where it is (TRD-TEST-001).
+      - name: unit tests and coverage floor
+        run: npm run test:ci
+
+      # A commit containing anything matching a secret pattern blocks the merge
+      # (TRD-CICD-010). A leaked secret is rotated, never merely deleted from
+      # the diff — removing it from the tip leaves it in the history.
+      - name: secret scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # TRD-SEC-008. Reported rather than failed: the thirdweb dependency tree
+      # carries advisories in WalletConnect and MetaMask connectors this app
+      # never imports, and whose suggested remedy is a version rollback. A gate
+      # that cannot be satisfied is a gate everybody learns to ignore, so this
+      # surfaces them in the log where a person reads them.
+      - name: dependency advisories
+        run: npm audit --audit-level=high || true
+
+  size:
+    name: download size budget
+    runs-on: ubuntu-latest
+    needs: verify
+    # A release build takes several minutes and the number only moves when
+    # native dependencies do. Pull requests get the fast gates above.
+    if: github.event_name == 'push'
+
+    env:
+      EXPO_PUBLIC_ENV: development
+      EXPO_PUBLIC_THIRDWEB_CLIENT_ID: ci-placeholder
+      EXPO_PUBLIC_NAKAMA_HOST: localhost
+      EXPO_PUBLIC_NAKAMA_SERVER_KEY: defaultkey
+      EXPO_PUBLIC_VERIFIER_URL: http://localhost:8787
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - run: npm ci
+
+      # `android/` is gitignored, so the native project is generated here from
+      # the config plugins in app.json — which is also what proves those plugins
+      # still produce a buildable project.
+      - name: prebuild
+        run: npx expo prebuild --platform android --no-install
+
+      - name: assemble release
+        working-directory: android
+        run: ./gradlew assembleRelease --no-daemon
+
+      # 40 MB per architecture (PRD-ACC-006). The budget fails the build with
+      # both numbers rather than being measured after somebody notices the app
+      # got bigger (TRD-PERF-003, TRD-PERF-009).
+      - name: size budget
+        run: npm run size:budget -- android/app/build/outputs/apk/release
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: apk-release
+          path: android/app/build/outputs/apk/release/*.apk
+          retention-days: 7
+          if-no-files-found: warn

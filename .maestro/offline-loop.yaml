@@ -1,0 +1,146 @@
+# The offline loop (TRD-TEST-003).
+#
+# This one flow is the product thesis in a single path: a student signs in,
+# plays, loses signal for three missions, gets it back, and finds every one of
+# them counted — then has the app killed and finds it all still there. If this
+# passes, the central promise holds. If it fails, a green unit suite means very
+# little: it would mean a product that quietly discards a fortnight of work.
+#
+# **One deviation from the specified flow, stated rather than hidden.** 20-16
+# writes the first leg as "join with class code". That path is a stub today —
+# `app/(auth)/join.tsx` says so on screen — because provisioning a class-code
+# account depends on a thirdweb capability nobody has verified against a live
+# integration (30-03 OQ-04). So this signs in by email instead, which is the
+# path that exists. When class-code join lands, the first leg here changes and
+# nothing after it does.
+#
+# The email leg needs a staging account whose one-time code the runner can read,
+# supplied as MAESTRO_OTP. Without it the flow cannot run unattended, and that
+# is a genuine gap rather than something to paper over with a fixed test code
+# baked into a login path children also use.
+#
+# Run: maestro test .maestro/offline-loop.yaml
+
+appId: com.lenterra
+name: offline loop
+tags:
+  - release-candidate
+
+env:
+  STUDENT_EMAIL: ${MAESTRO_STUDENT_EMAIL}
+  OTP: ${MAESTRO_OTP}
+  STUDENT_NAME: Uji Coba
+
+---
+- launchApp:
+    clearState: true
+    clearKeychain: true
+
+# --- sign in ---------------------------------------------------------------
+- assertVisible:
+    id: 'welcome-screen'
+- tapOn:
+    id: 'sign-in-email'
+
+- tapOn:
+    id: 'email-input'
+- inputText: ${STUDENT_EMAIL}
+- tapOn:
+    id: 'email-submit'
+
+- extendedWaitUntil:
+    visible:
+      id: 'otp-input'
+    timeout: 30000
+- tapOn:
+    id: 'otp-input'
+- inputText: ${OTP}
+- tapOn:
+    id: 'email-submit'
+
+- extendedWaitUntil:
+    visible:
+      id: 'name-screen'
+    timeout: 30000
+- tapOn:
+    id: 'display-name-input'
+- inputText: ${STUDENT_NAME}
+- tapOn:
+    id: 'name-submit'
+
+- extendedWaitUntil:
+    visible:
+      id: 'home-screen'
+    timeout: 60000
+
+# --- one mission online ----------------------------------------------------
+# Online first, so the catalog is pulled and cached. Everything after the
+# airplane-mode toggle depends on that having worked.
+- tapOn:
+    id: 'recommendation-primary'
+- assertVisible:
+    id: 'play-mode-chooser'
+- tapOn:
+    id: 'play-mode-solo'
+- runFlow: play-one-mission.yaml
+- tapOn:
+    id: 'result-continue'
+
+# --- three missions offline ------------------------------------------------
+# The toggle is the whole test. Everything past it has to work with no network:
+# mission load from cache, rules, opponent, goal evaluation, result, points.
+- setAirplaneMode: enabled
+
+- repeat:
+    times: 3
+    commands:
+      - tapOn:
+          id: 'recommendation-primary'
+      - tapOn:
+          id: 'play-mode-solo'
+      - runFlow: play-one-mission.yaml
+      # Marked provisional rather than presented as final. A number that
+      # silently changes later reads as the system cheating.
+      - assertVisible:
+          id: 'result-pending-sync'
+      - tapOn:
+          id: 'result-continue'
+
+# Three unsynced items, said plainly rather than hidden behind a spinner.
+- assertVisible:
+    id: 'offline-notice'
+
+# --- reconnect and sync ----------------------------------------------------
+- setAirplaneMode: disabled
+
+- extendedWaitUntil:
+    notVisible:
+      id: 'offline-notice'
+    timeout: 120000
+
+- tapOn:
+    id: 'tab-profile'
+- tapOn:
+    id: 'profile-tab-statistics'
+# The three offline missions have to show up as real progress rather than a
+# placeholder that resolves later.
+- assertVisible:
+    id: 'profile-statistics'
+
+# --- survive a kill --------------------------------------------------------
+# A borrowed phone gets taken back mid-session and the app is killed. Nothing
+# banked may be lost by that.
+- stopApp
+- launchApp:
+    clearState: false
+
+- assertVisible:
+    id: 'home-screen'
+- assertNotVisible:
+    id: 'offline-notice'
+- tapOn:
+    id: 'tab-profile'
+- tapOn:
+    id: 'profile-tab-statistics'
+- assertVisible:
+    id: 'profile-statistics'

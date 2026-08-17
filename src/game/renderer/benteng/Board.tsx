@@ -82,6 +82,22 @@ export function BentengBoard({
     [legalTargets, selectedUnitId],
   );
 
+  /**
+   * Stable handles for "a move you may make", in board order.
+   *
+   * Benteng needs two taps — pick a unit, then a square — so the handle is on
+   * the unit while nothing is selected, and on the destination once something
+   * is. The E2E flow taps `legal-move-0` twice and gets a legal move without
+   * knowing any of the rules.
+   */
+  const movableUnitIds = useMemo(() => {
+    const ids: string[] = [];
+    for (const target of legalTargets) {
+      if (ids.indexOf(target.unitId) < 0) ids.push(target.unitId);
+    }
+    return ids;
+  }, [legalTargets]);
+
   const selected = selectedUnitId
     ? state.units.filter((unit) => unit.id === selectedUnitId)[0] ?? null
     : null;
@@ -116,6 +132,17 @@ export function BentengBoard({
               const base = cell?.base ?? null;
               const isTarget = targetsForSelected.some((target) => target.x === x && target.y === y);
               const isSelected = unit !== null && unit.id === selectedUnitId;
+
+              const targetIndex = isTarget
+                ? targetsForSelected.findIndex((target) => target.x === x && target.y === y)
+                : -1;
+              const unitIndex = unit && !selectedUnitId ? movableUnitIds.indexOf(unit.id) : -1;
+              const handle =
+                targetIndex >= 0
+                  ? `legal-move-${targetIndex}`
+                  : unitIndex >= 0
+                    ? `legal-move-${unitIndex}`
+                    : undefined;
               const freshness = unit ? unitFreshness(state, unit.id) : null;
 
               const label = unit
@@ -133,6 +160,7 @@ export function BentengBoard({
               return (
                 <Pressable
                   key={x}
+                  testID={handle}
                   accessibilityRole="button"
                   accessibilityLabel={label}
                   accessibilityState={{ selected: isSelected, disabled }}

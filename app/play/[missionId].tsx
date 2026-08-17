@@ -118,17 +118,23 @@ function ModeChooser({
 	const { t } = useTranslation();
 
 	return (
-		<SafeAreaView style={styles.screen}>
+		<SafeAreaView testID="play-mode-chooser" style={styles.screen}>
 			<ScrollView contentContainerStyle={styles.chooserBody}>
 				<Text style={styles.chooserTitle}>{t('play.chooseMode')}</Text>
 
-				<Pressable accessibilityRole="button" style={styles.modeCard} onPress={() => onChoose('solo')}>
+				<Pressable
+					testID="play-mode-solo"
+					accessibilityRole="button"
+					style={styles.modeCard}
+					onPress={() => onChoose('solo')}
+				>
 					<Text style={styles.modeTitle}>{t('play.modeSolo')}</Text>
 					<Text style={styles.modeBody}>{t('play.modeSoloBody')}</Text>
 				</Pressable>
 
 				<Pressable
 					accessibilityRole="button"
+					testID="play-mode-hotseat"
 					style={styles.modeCard}
 					onPress={() => onChoose('hotseat')}
 				>
@@ -182,7 +188,7 @@ function PlaySurface({
 
 	if (result) {
 		return (
-			<SafeAreaView style={styles.screen}>
+			<SafeAreaView testID="result-screen" style={styles.screen}>
 				<ScrollView contentContainerStyle={styles.resultBody}>
 					<Text style={styles.resultTitle}>
 						{result.outcome === 'success' ? t('result.success') : t('result.failure')}
@@ -193,7 +199,9 @@ function PlaySurface({
 						replay. Saying so is not a caveat — an unmarked provisional
 						number that later changes reads as the system cheating.
 					*/}
-					<Text style={styles.pending}>{t('result.pendingSync')}</Text>
+					<Text testID="result-pending-sync" style={styles.pending}>
+						{t('result.pendingSync')}
+					</Text>
 
 					{result.outcome !== 'success' ? (
 						<Text style={styles.diagnostic}>
@@ -201,7 +209,12 @@ function PlaySurface({
 						</Text>
 					) : null}
 
-					<Pressable accessibilityRole="button" style={styles.primary} onPress={onLeave}>
+					<Pressable
+						testID="result-continue"
+						accessibilityRole="button"
+						style={styles.primary}
+						onPress={onLeave}
+					>
 						<Text style={styles.primaryLabel}>{t('result.nextMission')}</Text>
 					</Pressable>
 				</ScrollView>
@@ -210,7 +223,7 @@ function PlaySurface({
 	}
 
 	return (
-		<SafeAreaView style={styles.screen}>
+		<SafeAreaView testID="play-screen" style={styles.screen}>
 			<View style={styles.header}>
 				<Pressable accessibilityRole="button" onPress={onLeave} hitSlop={12}>
 					<Text style={styles.leave}>{t('play.quit')}</Text>
@@ -265,7 +278,12 @@ function PlaySurface({
 				animation is a replay of events that have happened.
 			*/}
 			{session.animating ? (
-				<Pressable accessibilityRole="button" style={styles.skip} onPress={session.skipAnimation}>
+				<Pressable
+					testID="skip-animation"
+					accessibilityRole="button"
+					style={styles.skip}
+					onPress={session.skipAnimation}
+				>
 					<Text style={styles.skipLabel}>{t('play.skipAnimation')}</Text>
 				</Pressable>
 			) : null}

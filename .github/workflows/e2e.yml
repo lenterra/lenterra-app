@@ -1,0 +1,112 @@
+# The offline end-to-end flow (TRD-TEST-003).
+#
+# Separate from ci.yml because it needs an Android emulator and takes minutes,
+# and because the requirement asks for it on release candidates rather than on
+# every push. A failure blocks the release.
+#
+# It runs on a version tag, and on demand. On demand matters more than it looks:
+# this is the flow somebody wants to run after touching sync, the catalog, or
+# the play surface, without cutting a release to find out.
+#
+# **It cannot run unattended yet**, and the reason is worth stating plainly
+# rather than discovering from a red build. Signing in requires a one-time code
+# delivered to a mailbox, and nothing here reads that mailbox. The alternatives
+# are both worse than the gap: a fixed test code would be a fixed code in a
+# login path children also use, and a bypass flag would be a bypass flag
+# shipped in the same binary. Closing this properly means either the
+# class-code path landing (30-03 OQ-04), which needs no mailbox, or a staging
+# mail API the runner can read. Until then the flow is run with a code supplied
+# by hand.
+
+name: e2e
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      student_email:
+        description: Staging account the test student signs in with
+        required: true
+      nakama_host:
+        description: Nakama host the build should point at
+        required: true
+        default: staging.lenterra.id
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  offline-loop:
+    name: offline loop on the reference profile
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    env:
+      EXPO_PUBLIC_ENV: staging
+      EXPO_PUBLIC_THIRDWEB_CLIENT_ID: ${{ secrets.THIRDWEB_CLIENT_ID }}
+      EXPO_PUBLIC_NAKAMA_HOST: ${{ inputs.nakama_host || secrets.NAKAMA_HOST }}
+      EXPO_PUBLIC_NAKAMA_SERVER_KEY: ${{ secrets.NAKAMA_SERVER_KEY }}
+      EXPO_PUBLIC_VERIFIER_URL: ${{ secrets.VERIFIER_URL }}
+      MAESTRO_STUDENT_EMAIL: ${{ inputs.student_email || secrets.E2E_STUDENT_EMAIL }}
+      # Supplied by hand for now. See the header for why neither a fixed code
+      # nor a sign-in bypass is an acceptable substitute.
+      MAESTRO_OTP: ${{ secrets.E2E_OTP }}
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - run: npm ci
+
+      - name: prebuild
+        run: npx expo prebuild --platform android --no-install
+
+      - name: assemble release
+        working-directory: android
+        run: ./gradlew assembleRelease --no-daemon
+
+      - name: install maestro
+        run: |
+          curl -Ls https://get.maestro.mobile.dev | bash
+          echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
+
+      # The reference profile from 20-15: API 26 is the app's minSdkVersion, and
+      # testing on a newer, faster image would measure a device the target
+      # student does not have. KVM is what makes this bearable at all.
+      - name: enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: run the offline loop
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 26
+          target: default
+          arch: x86_64
+          profile: Nexus 5
+          ram-size: 2048M
+          disable-animations: false # the flow skips animations itself; hiding them would hide a bug in that
+          script: |
+            adb install -r android/app/build/outputs/apk/release/*.apk
+            maestro test .maestro/offline-loop.yaml --format junit --output maestro-report.xml
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: maestro-report
+          path: |
+            maestro-report.xml
+            ~/.maestro/tests/**
+          retention-days: 30

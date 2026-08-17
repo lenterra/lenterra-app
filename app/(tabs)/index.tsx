@@ -109,7 +109,7 @@ export default function HomeScreen() {
 	}
 
 	return (
-		<SafeAreaView style={styles.safeArea}>
+		<SafeAreaView testID="home-screen" style={styles.safeArea}>
 			<OfflineNotice pending={pending} syncing={false} />
 
 			<ScrollView
@@ -200,6 +200,7 @@ export default function HomeScreen() {
 						<Pressable
 							accessibilityRole="button"
 							accessibilityLabel={`${primary.missionId}. ${t(primary.displayReasonKey)}`}
+							testID="recommendation-primary"
 							style={styles.primaryCard}
 							onPress={() => openMission(primary.missionId)}
 						>

@@ -88,6 +88,10 @@ export function CongklakBoard({
       <View style={styles.rowArea}>
         {playerRow.map((index) => {
           const legal = legalPits.includes(index);
+          // A stable handle for the playable pits, in board order. The E2E flow
+          // needs to take *a* legal move without knowing the rules, and marking
+          // legality is something the board already does visually.
+          const legalIndex = legal ? legalPits.indexOf(index) : -1;
           return (
             <Pit
               key={index}
@@ -96,6 +100,7 @@ export function CongklakBoard({
               active={activePit === index}
               side="player"
               legal={legal}
+              testID={legalIndex >= 0 ? `legal-move-${legalIndex}` : undefined}
               onPress={legal && !disabled ? () => onPitPress(index) : undefined}
             />
           );
@@ -110,6 +115,7 @@ function Pit({
   seeds,
   side,
   legal = false,
+  testID,
   active = false,
   onPress,
 }: {
@@ -117,6 +123,7 @@ function Pit({
   seeds: number;
   side: 'player' | 'opponent';
   legal?: boolean;
+  testID?: string;
   active?: boolean;
   onPress?: () => void;
 }) {
@@ -124,6 +131,7 @@ function Pit({
 
   return (
     <Pressable
+      testID={testID}
       accessibilityRole={onPress ? 'button' : 'text'}
       // The count is the whole game. A screen reader user must get the number,
       // not "pit".

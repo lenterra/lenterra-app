@@ -61,10 +61,11 @@ export default function EmailScreen() {
 	}
 
 	return (
-		<View style={styles.screen}>
+		<View testID="email-screen" style={styles.screen}>
 			<Text style={styles.title}>{t("auth.signInEmail")}</Text>
 
 			<TextInput
+				testID="email-input"
 				accessibilityLabel="Email"
 				style={styles.input}
 				value={email}
@@ -79,6 +80,7 @@ export default function EmailScreen() {
 
 			{sent ? (
 				<TextInput
+					testID="otp-input"
 					accessibilityLabel={t("auth.codeLabel")}
 					style={styles.input}
 					value={code}
@@ -92,6 +94,7 @@ export default function EmailScreen() {
 			) : null}
 
 			<Pressable
+				testID="email-submit"
 				accessibilityRole="button"
 				style={[styles.primary, busy && styles.disabled]}
 				disabled={busy || email.length === 0}

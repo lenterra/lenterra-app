@@ -166,6 +166,7 @@ export default function ProfileScreen() {
           {TABS.map((name) => (
             <Pressable
               key={name}
+              testID={`profile-tab-${name}`}
               accessibilityRole="tab"
               accessibilityState={{ selected: tab === name }}
               style={[styles.tab, tab === name && styles.tabActive]}
@@ -179,7 +180,11 @@ export default function ProfileScreen() {
         </View>
 
         {tab === 'record' ? <RecordTab progress={progress.data} /> : null}
-        {tab === 'statistics' ? <StatisticsTab progress={progress.data} /> : null}
+        {tab === 'statistics' ? (
+          <View testID="profile-statistics">
+            <StatisticsTab progress={progress.data} />
+          </View>
+        ) : null}
         {tab === 'friends' ? <FriendsTab accountId={accountId} /> : null}
         {tab === 'certificates' ? <CertificatesTab accountId={accountId} /> : null}
 

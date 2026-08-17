@@ -141,6 +141,30 @@ export function backoff(
 }
 
 /**
+ * Clear the backoff on specific items so they may be sent again now.
+ *
+ * For the case where the reason they failed has just been fixed. After pulling
+ * a catalog the server said was stale, the very next send is the one likely to
+ * succeed — and leaving those items inside the backoff window they earned from
+ * the failure means the immediate retry finds an empty queue and gives up,
+ * making the student wait out a delay for a problem already solved.
+ *
+ * Deliberately not a general "retry everything now": that would let a caller
+ * defeat backoff entirely and hammer a struggling server.
+ */
+export function clearBackoff(accountId: string, ids: string[]): void {
+  const items = read(accountId);
+  let changed = false;
+  for (const item of items) {
+    if (!ids.includes(item.id) || item.status !== 'pending') continue;
+    if (item.nextAttemptAt === 0) continue;
+    item.nextAttemptAt = 0;
+    changed = true;
+  }
+  if (changed) write(accountId, items);
+}
+
+/**
  * A permanent failure.
  *
  * Kept in the queue rather than deleted, so the student can be shown what

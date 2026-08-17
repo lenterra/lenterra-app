@@ -1,0 +1,51 @@
+# Play a mission to its end, whichever game it is.
+#
+# Extracted because the offline loop plays four missions and the recommendation
+# engine decides which. A flow that assumed Congklak would pass or fail on which
+# mission the selector happened to pick, which is the kind of flakiness that
+# gets an E2E suite switched off.
+#
+# It plays legally rather than well: the point is to reach a result, not to win.
+# A failed mission is a valid outcome and still has to sync.
+
+appId: com.lenterra
+name: play one mission
+
+---
+- assertVisible:
+    id: 'play-screen'
+
+# Up to the mission's move cap. Missions are authored to fit 2–5 minutes, and
+# the cap is what stops this running forever if a tap stops registering.
+- repeat:
+    times: 40
+    commands:
+      - runFlow:
+          # Stop as soon as the mission resolves, however it resolved.
+          when:
+            notVisible:
+              id: 'result-screen'
+          commands:
+            # Skip any animation still running. Safe because the logical state
+            # was already correct before the first frame.
+            - runFlow:
+                when:
+                  visible:
+                    id: 'skip-animation'
+                commands:
+                  - tapOn:
+                      id: 'skip-animation'
+
+            # Take the first move the board offers as legal. The renderer marks
+            # them, so this never attempts an illegal move and never needs to
+            # know which game is on screen.
+            - runFlow:
+                when:
+                  visible:
+                    id: 'legal-move-0'
+                commands:
+                  - tapOn:
+                      id: 'legal-move-0'
+
+- assertVisible:
+    id: 'result-screen'

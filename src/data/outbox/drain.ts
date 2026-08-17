@@ -106,6 +106,11 @@ export async function drain(
         if (recovery === 'catalog' && hooks.refreshCatalog && !catalogRetried) {
           catalogRetried = true;
           await hooks.refreshCatalog();
+          // The batch was just put into a backoff window by the failure above,
+          // so without this the "retry" below finds nothing ready and exits
+          // having sent nothing — the student waits out a delay for a problem
+          // that has already been fixed.
+          queue.clearBackoff(accountId, batch.map((item) => item.id));
           continue; // one retry after pulling the catalog
         }
 

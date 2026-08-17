@@ -8,10 +8,10 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "test": "jest --watchAll",
-    "lint": "expo lint"
-  },
-  "jest": {
-    "preset": "jest-expo"
+    "lint": "expo lint",
+    "typecheck": "tsc --noEmit",
+    "test:ci": "jest --watchAll=false --coverage",
+    "size:budget": "node scripts/size-budget.mjs"
   },
   "dependencies": {
     "@coinbase/wallet-mobile-sdk": "^1.0.13",
