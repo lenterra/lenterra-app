@@ -118,7 +118,14 @@
       "captured": "Semua unitmu tertangkap",
       "baseTouched": "Lawan menyentuh bentengmu",
       "outOfTurns": "Giliranmu habis"
-    }
+    },
+    "unitLabel": "Bidak {{side}}, kesegaran {{freshness}}",
+    "baseLabel": "Benteng {{side}}",
+    "emptyCell": "Petak kosong",
+    "yours": "kamu",
+    "theirs": "lawan",
+    "yourPrisoners": "{{count}} bidakmu ditawan",
+    "theirPrisoners": "{{count}} bidak lawan kamu tawan"
   },
   "progress": {
     "title": "Kemajuan",

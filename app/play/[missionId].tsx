@@ -25,11 +25,12 @@ import {
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { useTranslation } from 'react-i18next';
 
-import type { CongklakMove, CongklakState, Mission } from '@lenterra/core';
+import type { BentengState, CongklakMove, CongklakState, Mission } from '@lenterra/core';
 
 import { activeAccountId } from '@/src/data/cache/storage';
 import { currentCatalogVersion, findMission } from '@/src/data/cache/catalog';
 import { usePlaySession, type PlayResult } from '@/src/features/play/usePlaySession';
+import { BentengBoard } from '@/src/game/renderer/benteng/Board';
 import { CongklakBoard } from '@/src/game/renderer/congklak/Board';
 import { EmptyState } from '@/src/ui/components/ScreenState';
 import {
@@ -106,11 +107,11 @@ function PlaySurface({
 	const { t } = useTranslation();
 
 	const session = usePlaySession({ accountId, mission, catalogVersion, onFinished });
-	const state = session.state as CongklakState | null;
+	// Which unit the student has picked up. Benteng only — Congklak has no
+	// two-step move, and giving it one would add a tap for nothing.
+	const [selectedUnitId, setSelectedUnitId] = useState<string | null>(null);
 
-	const legalPits = (session.legalMoves as CongklakMove[])
-		.filter((move) => move.kind === 'sow')
-		.map((move) => move.pit);
+	const state = session.state as (CongklakState | BentengState) | null;
 
 	if (!state) {
 		return (
@@ -162,12 +163,28 @@ function PlaySurface({
 
 			<Text style={styles.brief}>{t(mission.briefKey)}</Text>
 
-			<CongklakBoard
-				state={state}
-				legalPits={legalPits}
-				disabled={session.animating || state.toMove !== state.playerSide}
-				onPitPress={(pit) => session.play({ kind: 'sow', pit })}
-			/>
+			{mission.game === 'benteng' ? (
+				<BentengBoard
+					state={state as BentengState}
+					selectedUnitId={selectedUnitId}
+					onSelectUnit={setSelectedUnitId}
+					onMove={(unitId, x, y) => {
+						setSelectedUnitId(null);
+						session.play({ kind: 'move', unitId, x, y });
+					}}
+					legalTargets={session.legalMoves as { unitId: string; x: number; y: number }[]}
+					disabled={session.animating || state.toMove !== state.playerSide}
+				/>
+			) : (
+				<CongklakBoard
+					state={state as CongklakState}
+					legalPits={(session.legalMoves as CongklakMove[])
+						.filter((move) => move.kind === 'sow')
+						.map((move) => move.pit)}
+					disabled={session.animating || state.toMove !== state.playerSide}
+					onPitPress={(pit) => session.play({ kind: 'sow', pit })}
+				/>
+			)}
 
 			{/*
 				One tap finishes the animation. This is only safe because the

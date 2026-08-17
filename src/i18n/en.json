@@ -118,7 +118,14 @@
       "captured": "All your units were captured",
       "baseTouched": "The opponent reached your base",
       "outOfTurns": "You ran out of turns"
-    }
+    },
+    "unitLabel": "{{side}} unit, freshness {{freshness}}",
+    "baseLabel": "{{side}} fort",
+    "emptyCell": "Empty square",
+    "yours": "Your",
+    "theirs": "Opponent's",
+    "yourPrisoners": "{{count}} of your units are held",
+    "theirPrisoners": "{{count}} enemy units held"
   },
   "progress": {
     "title": "Progress",
