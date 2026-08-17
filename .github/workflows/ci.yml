@@ -94,8 +94,34 @@ jobs:
       # never imports, and whose suggested remedy is a version rollback. A gate
       # that cannot be satisfied is a gate everybody learns to ignore, so this
       # surfaces them in the log where a person reads them.
+      #
+      # What is *not* left to the log is anything critical. The `resolutions`
+      # block in package.json exists for that, and `fast-xml-parser` is the
+      # reason it has an entry: the AWS SDK reached transitively through
+      # thirdweb pins it to an exact 4.2.5, so no ordinary upgrade could move
+      # it, and it was the whole of this tree's critical count. Pinning it to a
+      # patched 4.x holds the API and clears all nine paths. The next entry
+      # added here should come with the same one-line reason.
       - name: dependency advisories
         run: npm audit --audit-level=high || true
+
+      # Criticals are a gate, not a report. Anything unfixable belongs in
+      # `resolutions` with a note above, or in a conversation — never silently
+      # in a log nobody reads.
+      #
+      # `yarn audit` exits with a bitmask of the severities it found, and
+      # `--level` filters only what it prints. So the exit status is 14 —
+      # low|moderate|high — on a tree with no critical at all, and testing it
+      # for zero would fail every run while appearing to check for criticals.
+      # Bit 16 is the only one this step is about.
+      - name: no critical advisories
+        run: |
+          code=0
+          yarn audit --level critical || code=$?
+          if [ $(( code & 16 )) -ne 0 ]; then
+            echo "::error::critical advisories present — fix, or pin in resolutions with a reason"
+            exit 1
+          fi
 
   size:
     name: download size budget
