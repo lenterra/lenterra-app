@@ -60,7 +60,11 @@
     "play": "Play",
     "replay": "Play again",
     "aboutTitle": "About this game",
-    "howToPlay": "How to play"
+    "howToPlay": "How to play",
+    "downloading": "Downloading missions… {{done}} of {{total}}",
+    "noContentYet": "Your missions have not downloaded yet.",
+    "noContentOffline": "Your missions have not downloaded yet. Connect once and they are yours to keep, offline.",
+    "downloadContent": "Download missions"
   },
   "play": {
     "yourTurn": "Your turn",
@@ -176,7 +180,10 @@
     "allSynced": "Everything is synced",
     "syncing": "Sending…",
     "failedPermanent": "{{count}} results could not be sent",
-    "explainRejected": "This result did not match when the server checked it, so it does not count."
+    "explainRejected": "This result did not match when the server checked it, so it does not count.",
+    "catalogUpdateWaiting": "New missions are ready ({{size}})",
+    "catalogDownloadNow": "Download now",
+    "catalogOnWifi": "Waiting for wifi to save your data"
   },
   "error": {
     "generic": "Something went wrong. Try again.",

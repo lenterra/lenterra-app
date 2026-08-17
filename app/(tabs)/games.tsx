@@ -36,7 +36,8 @@ import type { Mission } from '@lenterra/core';
 import { activeAccountId } from '@/src/data/cache/storage';
 import { currentCatalogVersion, missionsFor } from '@/src/data/cache/catalog';
 import { useProgress } from '@/src/data/queries/hooks';
-import { EmptyState } from '@/src/ui/components/ScreenState';
+import { useSync } from '@/src/features/sync/SyncProvider';
+import { EmptyState, LoadingState } from '@/src/ui/components/ScreenState';
 import {
 	MIN_TOUCH_TARGET,
 	palette,
@@ -52,7 +53,13 @@ export default function GamesScreen() {
 	const { t } = useTranslation();
 	const router = useRouter();
 	const accountId = activeAccountId();
-	const catalogVersion = accountId ? currentCatalogVersion(accountId) : null;
+	const sync = useSync();
+	// Recomputed when the catalog finishes downloading: the version pointer
+	// moves last, so a completed pull is exactly when this stops being null.
+	const catalogVersion = useMemo(
+		() => (accountId ? currentCatalogVersion(accountId) : null),
+		[accountId, sync.catalogProgress],
+	);
 
 	const progress = useProgress(accountId);
 
@@ -64,10 +71,35 @@ export default function GamesScreen() {
 		})).filter((ladder) => ladder.missions.length > 0);
 	}, [accountId, catalogVersion]);
 
+	// No ladders has three distinct causes and they need three different
+	// answers. Collapsing them into "catalog stale" told a student on their
+	// first launch — the commonest case by far — that something was wrong,
+	// when content was simply still arriving.
 	if (ladders.length === 0) {
+		if (sync.catalogProgress) {
+			const { done, total } = sync.catalogProgress;
+			return (
+				<SafeAreaView style={styles.screen}>
+					<LoadingState label={t('games.downloading', { done, total })} />
+				</SafeAreaView>
+			);
+		}
+
 		return (
 			<SafeAreaView style={styles.screen}>
-				<EmptyState title={t('games.title')} body={t('error.catalogStale')} />
+				<EmptyState
+					title={t('games.title')}
+					body={sync.online ? t('games.noContentYet') : t('games.noContentOffline')}
+				/>
+				{sync.online ? (
+					<Pressable
+						accessibilityRole="button"
+						style={styles.download}
+						onPress={() => void sync.downloadCatalogNow()}
+					>
+						<Text style={styles.downloadLabel}>{t('games.downloadContent')}</Text>
+					</Pressable>
+				) : null}
 			</SafeAreaView>
 		);
 	}
@@ -197,4 +229,15 @@ const styles = StyleSheet.create({
 	missionTitle: { ...typography.label, color: palette.ink900 },
 	missionBrief: { ...typography.caption, color: palette.ink500 },
 	play: { ...typography.label, color: palette.blue600 },
+
+	download: {
+		minHeight: MIN_TOUCH_TARGET,
+		marginHorizontal: spacing.xl,
+		marginBottom: spacing.xl,
+		backgroundColor: palette.blue600,
+		borderRadius: radius.md,
+		alignItems: 'center',
+		justifyContent: 'center',
+	},
+	downloadLabel: { ...typography.label, color: palette.surface },
 });

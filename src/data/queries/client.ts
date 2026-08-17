@@ -88,6 +88,8 @@ export const queryKeys = {
   progress: (accountId: string) => ['progress', accountId] as const,
   recommendations: (accountId: string, gameId?: string) =>
     ['recommendations', accountId, gameId ?? 'all'] as const,
+  /** Prefix matching every per-game variant, for invalidation. */
+  recommendationsAll: (accountId: string) => ['recommendations', accountId] as const,
   catalogManifest: (accountId: string) => ['catalog', 'manifest', accountId] as const,
   leaderboard: (accountId: string, scope: string, period: string) =>
     ['leaderboard', accountId, scope, period] as const,

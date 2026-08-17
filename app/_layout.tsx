@@ -27,7 +27,7 @@ import { ThirdwebProvider } from "thirdweb/react";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { createQueryClient, restoreQueryCache } from "@/src/data/queries/client";
 import { recoverInflight } from "@/src/data/outbox/queue";
-import { useSyncEngine } from "@/src/features/sync/useSyncEngine";
+import { SyncProvider } from "@/src/features/sync/SyncProvider";
 import { useSession } from "@/src/features/onboarding/useSession";
 import { initI18n } from "@/src/i18n";
 import { startConnectivityWatch } from "@/src/lib/net";
@@ -86,11 +86,6 @@ function SessionRouter({
 	status: ReturnType<typeof useSession>["status"];
 	accountId: string | null;
 }) {
-	// Drain triggers live here rather than in a screen: a student who regains
-	// signal on the leaderboard tab should sync just as readily as one sitting
-	// on the home screen.
-	useSyncEngine(accountId);
-
 	if (status === "unauthenticated") {
 		return <Redirect href="/(auth)/welcome" />;
 	}
@@ -98,12 +93,17 @@ function SessionRouter({
 		return <Redirect href="/(auth)/name" />;
 	}
 
+	// Sync lives here rather than in a screen: a student who regains signal on
+	// the leaderboard tab should sync and pull content just as readily as one
+	// sitting on the home screen.
 	return (
-		<Stack>
-			<Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-			<Stack.Screen name="(auth)" options={{ headerShown: false }} />
-			<Stack.Screen name="play/[missionId]" options={{ headerShown: false }} />
-			<Stack.Screen name="+not-found" />
-		</Stack>
+		<SyncProvider accountId={accountId}>
+			<Stack>
+				<Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+				<Stack.Screen name="(auth)" options={{ headerShown: false }} />
+				<Stack.Screen name="play/[missionId]" options={{ headerShown: false }} />
+				<Stack.Screen name="+not-found" />
+			</Stack>
+		</SyncProvider>
 	);
 }

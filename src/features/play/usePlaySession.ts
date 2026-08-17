@@ -24,6 +24,7 @@ import {
 } from '@lenterra/core';
 
 import { Animator } from '../../game/animator';
+import { holdCatalog } from '../../data/cache/catalogSync';
 import { ACCOUNT_KEYS, accountStorage, readJson, writeJson } from '../../data/cache/storage';
 import { enqueue, newItemId } from '../../data/outbox/queue';
 import { config } from '../../lib/config';
@@ -120,7 +121,15 @@ export function usePlaySession(options: UsePlaySessionOptions) {
     setState(fresh.state);
     setFinished(fresh.isTerminal());
 
-    return () => animator.cancel();
+    // Freeze the catalog for the duration (TRD-SYNC-011). Content changing
+    // under a mission in progress would leave the student having played one
+    // version and the server validating against another.
+    const release = holdCatalog();
+
+    return () => {
+      animator.cancel();
+      release();
+    };
   }, [accountId, animator, engine, mission]);
 
   const persistResume = useCallback(() => {

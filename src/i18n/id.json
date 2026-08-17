@@ -60,7 +60,11 @@
     "play": "Main",
     "replay": "Main lagi",
     "aboutTitle": "Tentang permainan ini",
-    "howToPlay": "Cara bermain"
+    "howToPlay": "Cara bermain",
+    "downloading": "Mengunduh misi… {{done}} dari {{total}}",
+    "noContentYet": "Misi kamu belum terunduh.",
+    "noContentOffline": "Misi kamu belum terunduh. Sambungkan sekali saja, setelah itu bisa dimainkan tanpa internet.",
+    "downloadContent": "Unduh misi"
   },
   "play": {
     "yourTurn": "Giliranmu",
@@ -128,7 +132,11 @@
     },
     "evidenceCount": "{{count}} bukti",
     "needsSecondSource": "Coba misi lain untuk membuktikan kemampuan ini",
-    "trend": { "up": "naik", "flat": "tetap", "down": "turun" }
+    "trend": {
+      "up": "naik",
+      "flat": "tetap",
+      "down": "turun"
+    }
   },
   "board": {
     "title": "Papan Peringkat",
@@ -172,7 +180,10 @@
     "allSynced": "Semua sudah terkirim",
     "syncing": "Mengirim…",
     "failedPermanent": "{{count}} hasil tidak bisa dikirim",
-    "explainRejected": "Hasil ini tidak cocok saat diperiksa server, jadi tidak dihitung."
+    "explainRejected": "Hasil ini tidak cocok saat diperiksa server, jadi tidak dihitung.",
+    "catalogUpdateWaiting": "Ada misi baru ({{size}})",
+    "catalogDownloadNow": "Unduh sekarang",
+    "catalogOnWifi": "Menunggu wifi supaya kuota kamu aman"
   },
   "error": {
     "generic": "Ada yang tidak beres. Coba lagi.",
