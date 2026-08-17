@@ -9,7 +9,11 @@
     "offline": "No connection",
     "pending": "Waiting to sync",
     "syncNow": "Sync now",
-    "seeAll": "See all"
+    "seeAll": "See all",
+    "accept": "Accept",
+    "decline": "Decline",
+    "add": "Add",
+    "more": "More"
   },
   "auth": {
     "welcomeTitle": "Learn through traditional games",
@@ -172,7 +176,41 @@
     "settings": "Settings",
     "language": "Language",
     "dataSaver": "Data saver",
-    "dataSaverHelp": "Only download content on Wi-Fi"
+    "dataSaverHelp": "Only download content on Wi-Fi",
+    "tab": {
+      "record": "Record",
+      "statistics": "Statistics",
+      "friends": "Friends",
+      "certificates": "Certificates"
+    },
+    "class": "Class",
+    "requests": "Friend requests",
+    "pending": "Sent",
+    "awaitingReply": "Waiting for a reply",
+    "noFriendsYet": "No friends yet. Share your code with a classmate.",
+    "missionsOf": "{{done}} of {{total}} missions",
+    "noRecordTitle": "Nothing played yet",
+    "noRecordBody": "Finish a mission and your progress appears here.",
+    "notEnoughDataTitle": "Not enough history yet",
+    "notEnoughDataBody": "Play across a couple of weeks and a chart of your activity appears here.",
+    "activity": "Activity",
+    "weekSummary": "Week of {{date}}: {{attempts}} missions, {{minutes}} minutes",
+    "removeFriend": "Remove friend",
+    "block": "Block",
+    "report": "Report to a teacher",
+    "reportHelp": "A teacher will look at this. The other person is not told who reported them.",
+    "reportSentTitle": "Report sent",
+    "reportSentBody": "A teacher will look at this. We have also blocked them for you.",
+    "noCertificatesTitle": "No certificates yet",
+    "noCertificatesBody": "A certificate needs several skills mastered, proved by more than one mission, across more than one day.",
+    "certificateRemaining": "{{remaining}} of {{total}} skills still to master",
+    "signOut": "Sign out",
+    "signOutBody": "You can sign back in any time.",
+    "signOutPendingBody": "{{count}} results have not been sent yet. They are kept on this phone and will send when you sign back in.",
+    "deleteAccount": "Delete my account",
+    "deleteAccountBody": "This removes your account and everything you have done. It takes effect in 30 days, and you can cancel before then.",
+    "deleteScheduledTitle": "Deletion scheduled",
+    "deleteScheduledBody": "Your account will be deleted in 30 days. Tell your teacher if you change your mind."
   },
   "sync": {
     "pendingCount": "{{count}} waiting to send",
@@ -191,5 +229,60 @@
     "sessionExpired": "Sign in again to continue",
     "updateRequired": "Update the app to continue",
     "catalogStale": "Your content needs updating"
+  },
+  "certificate": {
+    "issuer": "Issued by Lenterra",
+    "issuedOn": "Issued {{date}}",
+    "evidence": "Based on {{attempts}} checked missions covering {{skills}} skills, over {{days}} days.",
+    "disclaimer": "This is a Lenterra record of practice. It is not a national qualification or an industry accreditation.",
+    "verifySoon": "Sharable verification is coming later.",
+    "cert": {
+      "comp": {
+        "foundations": {
+          "title": "Computation Foundations"
+        }
+      },
+      "algo": {
+        "foundations": {
+          "title": "Algorithm Foundations"
+        },
+        "strategy": {
+          "title": "Strategy and Optimisation"
+        }
+      },
+      "sec": {
+        "foundations": {
+          "title": "Cyber Security Foundations"
+        },
+        "defense": {
+          "title": "Defence and Response"
+        }
+      }
+    }
+  },
+  "skill": {
+    "comp": {
+      "counting": "Counting",
+      "arithmetic": "Arithmetic",
+      "estimation": "Estimation",
+      "modular": "Cycles and remainders"
+    },
+    "algo": {
+      "sequencing": "Sequencing",
+      "iteration": "Repetition",
+      "branching": "Choosing between options",
+      "state-eval": "Reading the position",
+      "lookahead": "Thinking ahead",
+      "greedy": "Resisting the obvious move",
+      "optimization": "Finding the best move"
+    },
+    "sec": {
+      "assets": "What is worth protecting",
+      "threats": "Spotting a threat",
+      "access": "Who is allowed in",
+      "defense": "Defending a position",
+      "risk": "Weighing risk",
+      "response": "Responding to an attack"
+    }
   }
 }

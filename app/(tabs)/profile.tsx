@@ -1,1177 +1,968 @@
-import React, { useRef, useEffect, useState } from 'react';
-import { ConnectButton, lightTheme, useActiveAccount } from "thirdweb/react";
-import { ThemedText } from "@/components/ThemedText";
-import { ThemedView } from "@/components/ThemedView";
-import { chain, client } from "@/constants/thirdweb";
-import { createAuth } from "thirdweb/auth";
-import { ethereum } from "thirdweb/chains";
-import { createWallet } from "thirdweb/wallets";
+/**
+ * Profile.
+ *
+ * This file was 1,176 lines and almost none of it was true. The header showed
+ * the literals `40`, `#3` and `20` for points, rank and friends; the Record tab
+ * had three hardcoded progress bars; Statistics drew a fixed 40/40/20 pie over
+ * a `pieChartData` constant; the Friends tab listed Justin Bieber, Rihanna and
+ * Selena Gomez; the Certificates tab opened a bundled `certificate.png`; and
+ * the whole screen was gated behind a wallet `ConnectButton` with eight wallet
+ * options, while the four other tabs rendered regardless.
+ *
+ * The rank shown here also disagreed with the rank on the board tab, because
+ * both were made up separately.
+ *
+ * Four things this establishes:
+ *
+ *  - **Every number comes from the server**, so the profile and the board
+ *    cannot contradict each other about the same student.
+ *  - **Mastery is shown as bands, never numbers** (PRD-ADPT-005). The contract
+ *    does not carry a value, so the screen is structurally incapable of it.
+ *  - **The identity a student shares is a friend code**, not the `0x…` wallet
+ *    address the demo printed as "Your ID" (PRD-SOC-011).
+ *  - **Authentication is not here.** It happens at app entry, so "signed out"
+ *    means the same thing on every screen (PRD-APP-057).
+ */
+
+import { useMemo, useState } from 'react';
 import {
-  StyleSheet,
-  Text,
-  View,
-  Image,
-  TextInput,
+  Alert,
+  Modal,
+  Pressable,
+  RefreshControl,
   SafeAreaView,
   ScrollView,
-  TouchableOpacity,
-  Dimensions,
-  ImageSourcePropType,
-  useColorScheme,
-  Modal,
-  Pressable
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from 'react-native';
-import { LineChart, PieChart } from 'react-native-chart-kit';
-import { AnimatedCircularProgress } from 'react-native-circular-progress';
-import { useTranslation } from "react-i18next";
+import { useTranslation } from 'react-i18next';
+import { useQueryClient } from '@tanstack/react-query';
 
-import { activeAccountId } from "@/src/data/cache/storage";
-import { useBootstrap } from "@/src/data/queries/hooks";
+import { activeAccountId, signOut } from '@/src/data/cache/storage';
+import { queryKeys } from '@/src/data/queries/client';
+import {
+  useBootstrap,
+  useCertificates,
+  useFriends,
+  useProgress,
+  type Certificate,
+  type CertificateProgress,
+  type Progress,
+} from '@/src/data/queries/hooks';
+import {
+  addFriend,
+  blockUser,
+  findByCode,
+  removeFriend,
+  reportUser,
+  type Friend,
+} from '@/src/data/nakama/friends';
+import { rpc } from '@/src/data/nakama/rpc';
+import { useSync } from '@/src/features/sync/SyncProvider';
+import { Avatar } from '@/src/ui/components/Avatar';
+import {
+  EmptyState,
+  ErrorState,
+  LoadingState,
+  PendingMark,
+} from '@/src/ui/components/ScreenState';
+import {
+  MIN_TOUCH_TARGET,
+  bandColors,
+  domainColors,
+  palette,
+  radius,
+  spacing,
+  typography,
+  type DomainName,
+} from '@/src/ui/tokens';
 
-const screenWidth = Dimensions.get('window').width;
+type Tab = 'record' | 'statistics' | 'friends' | 'certificates';
+const TABS: Tab[] = ['record', 'statistics', 'friends', 'certificates'];
 
-const images = [
-  require('@/assets/images/congklak-2.png'),
-  require('@/assets/images/python.png'),
-  require('@/assets/images/statistics.png'),
-];
+/** Under three days of history, a chart is decoration pretending to be data. */
+const MIN_WEEKS_FOR_CHART = 2;
 
-type TabType = 'record' | 'statistics' | 'friends' | 'certificates';
-type FriendType = 'friend' | 'request' | 'pending';
-
-type GameCardProps = {
-  title: string;
-  image: ImageSourcePropType;
-  tags: string[];
-  progress: number;
-};
-
-type FriendCardProps = {
-  name: string;
-  image: ImageSourcePropType;
-  type: FriendType;
+function domainOf(skillNodeId: string): DomainName {
+  if (skillNodeId.startsWith('comp.')) return 'computation';
+  if (skillNodeId.startsWith('sec.')) return 'security';
+  return 'algorithms';
 }
 
-type NavItemProps = {
-  icon: ImageSourcePropType;
-  label: string;
-  active: boolean;
-};
-
-
-type CertificateImage = {
-  id: number;
-  image: ImageSourcePropType;
-};
-
-const thirdwebAuth = createAuth({
-  domain: "localhost:3000",
-  client,
-});
-
-let isLoggedIn = false;
-
-export default function App() {
-  const account = useActiveAccount();
-  const theme = useColorScheme();
-
+export default function ProfileScreen() {
   const { t } = useTranslation();
   const accountId = activeAccountId();
+  const sync = useSync();
+
   const bootstrap = useBootstrap(accountId);
-  // The friend code is server-owned and rotatable. It replaces the wallet
-  // address as the student-visible identifier (PRD-ONB-003).
-  const friendCode = bootstrap.data?.profile.friendCode ?? "";
+  const progress = useProgress(accountId);
+  const [tab, setTab] = useState<Tab>('record');
 
-  // Authentication used to happen here: a `useEffect` calling
-  // `authenticateCustom(account.address)` with nothing proving the caller
-  // controlled that address. It has moved to the app-entry gate in
-  // `app/_layout.tsx`, which signs in through the verifier and reaches this
-  // screen only once there is a real session. Nothing on this tab authenticates.
+  if (bootstrap.isLoading && !bootstrap.data) {
+    return (
+      <SafeAreaView style={styles.screen}>
+        <LoadingState />
+      </SafeAreaView>
+    );
+  }
 
+  if (bootstrap.isError && !bootstrap.data) {
+    return (
+      <SafeAreaView style={styles.screen}>
+        <ErrorState onRetry={() => bootstrap.refetch()} />
+      </SafeAreaView>
+    );
+  }
 
-  const scrollRef = useRef<ScrollView>(null);
-  const [currentIndex, setCurrentIndex] = useState<number>(0);
-
-  const [name, setName] = useState<string>("Firsa");
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const nextIndex = (currentIndex + 1) % images.length;
-      scrollRef.current?.scrollTo({ x: nextIndex * screenWidth, animated: true });
-      setCurrentIndex(nextIndex);
-    }, 1500);
-
-    return () => clearInterval(interval);
-  }, [currentIndex]);
-
-  const [activeTab, setActiveTab] = useState<TabType>('record');
-  const [activeFriendsTab, setActiveFriendsTab] = useState<FriendType>('friend');
-  const [lightboxVisible, setLightboxVisible] = useState(false);
-  const [selectedImage, setSelectedImage] = useState<ImageSourcePropType | null>(null);
-  
-  const handleImagePress = (image: ImageSourcePropType) => {
-    setSelectedImage(image);
-    setLightboxVisible(true);
-  };
-
-  const pieChartData = [
-    {
-      name: "Basic Computation",
-      population: 40,
-      color: "#e74c3c",
-      legendFontColor: "#7F7F7F",
-      legendFontSize: 12
-    },
-    {
-      name: "Algorithms",
-      population: 40,
-      color: "#3498db",
-      legendFontColor: "#7F7F7F",
-      legendFontSize: 12
-    },
-    {
-      name: "Cyber Security",
-      population: 20,
-      color: "#f1c40f",
-      legendFontColor: "#7F7F7F",
-      legendFontSize: 12
-    }
-  ];
-
-  // Friend data
-  const friendsList = [
-    { id: 1, name: 'Athaya', image: require('@/assets/images/ariana.png') },
-    { id: 2, name: 'Faiz', image: require('@/assets/images/faiz.png') },
-    { id: 3, name: 'Firsa', image: require('@/assets/images/ariana.png') },
-    { id: 4, name: 'Saski', image: require('@/assets/images/ariana.png') },
-    { id: 5, name: 'Sussy', image: require('@/assets/images/ariana.png') },
-  ];
-
-  const requestsList = [
-    { id: 6, name: 'Justin Bieber', image: require('@/assets/images/ariana.png') },
-    { id: 7, name: 'Rihanna', image: require('@/assets/images/ariana.png') },
-    { id: 8, name: 'Selena Gomez', image: require('@/assets/images/ariana.png') },
-  ];
-
-  const pendingList = [
-    { id: 9, name: 'Raisa', image: require('@/assets/images/ariana.png') },
-  ];
-  
-  const certificateImages: CertificateImage[] = [
-    { id: 1, image: require('@/assets/images/certificate.png') },
-  ];
+  const profile = bootstrap.data?.profile;
+  const summary = bootstrap.data?.summary;
 
   return (
-    !!account ? (
-    <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content}>
+    <SafeAreaView style={styles.screen}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        refreshControl={
+          <RefreshControl
+            refreshing={progress.isRefetching}
+            onRefresh={() => {
+              void bootstrap.refetch();
+              void progress.refetch();
+            }}
+          />
+        }
+      >
         <View style={styles.header}>
-          <Image source={require('@/assets/images/lenterra-logo.png')} style={styles.sunIcon} />
-          
-          <View style={styles.profileContainer}>
-            <Image 
-              source={require('@/assets/images/firsa.png')} 
-              style={styles.profileImage} 
-            />
-            <Text style={styles.profileName}>Firsa</Text>
-          </View>
-
-          <View style={styles.connectButton}>
-            <ConnectButton
-                  client={client}
-                  chain={ethereum}
-                  theme={lightTheme({
-                    colors: {
-                      primaryButtonBg: "#1e8449",
-                      modalBg: "#1e8449",
-                      borderColor: "#196f3d",
-                      accentButtonBg: "#196f3d",
-                      primaryText: "#ffffff",
-                      secondaryIconColor: "#a7b8b9",
-                      secondaryText: "#a7b8b9",
-                      secondaryButtonBg: "#196f3d",
-                    },
-                  })}
-                  wallets={[
-                    createWallet("io.metamask"),
-                    createWallet("com.coinbase.wallet"),
-                    createWallet("me.rainbow"),
-                    createWallet("com.trustwallet.app"),
-                    createWallet("io.zerion.wallet"),
-                    createWallet("xyz.argent"),
-                    createWallet("com.okex.wallet"),
-                    createWallet("com.zengo"),
-                  ]}
-                  connectButton={{
-                    label: "Sign in to Lenterra",
-                  }}
-                  connectModal={{
-                    title: "Web3 Login",
-                  }}
-            />
-          </View>
-          
-          <View style={styles.statsContainer}>
-            <View style={styles.statItem}>
-              <Image 
-                source={require('@/assets/icons/star-putih.png')} 
-                style={styles.statIcon} 
-              />
-              <Text style={styles.statTitle}>POINTS</Text>
-              <Text style={styles.statValue}>40</Text>
-            </View>
-            
-            <View style={styles.divider} />
-            
-            <View style={styles.statItem}>
-              <Image 
-                source={require('@/assets/icons/rank.png')} 
-                style={styles.statIcon} 
-              />
-              <Text style={styles.statTitle}>RANK</Text>
-              <Text style={styles.statValue}>#3</Text>
-            </View>
-            
-            <View style={styles.divider} />
-            
-            <View style={styles.statItem}>
-              <Image 
-                source={require('@/assets/icons/friends.png')} 
-                style={styles.statIcon} 
-              />
-              <Text style={styles.statTitle}>FRIENDS</Text>
-              <Text style={styles.statValue}>20</Text>
-            </View>
-          </View>
-          
-          <View style={styles.tabContainer}>
-            <TouchableOpacity 
-              style={styles.tab}
-              onPress={() => setActiveTab('record')}
-            >
-              <Text style={activeTab === 'record' ? styles.tabActiveText : styles.tabText}>
-                Record
-              </Text>
-              {activeTab === 'record' && <View style={styles.tabActiveDot} />}
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={styles.tab}
-              onPress={() => setActiveTab('statistics')}
-            >
-              <Text style={activeTab === 'statistics' ? styles.tabActiveText : styles.tabText}>
-                Statistics
-              </Text>
-              {activeTab === 'statistics' && <View style={styles.tabActiveDot} />}
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={styles.tab}
-              onPress={() => setActiveTab('friends')}
-            >
-              <Text style={activeTab === 'friends' ? styles.tabActiveText : styles.tabText}>
-                Friends
-              </Text>
-              {activeTab === 'friends' && <View style={styles.tabActiveDot} />}
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={styles.tab}
-              onPress={() => setActiveTab('certificates')}
-            >
-              <Text style={activeTab === 'certificates' ? styles.tabActiveText : styles.tabText}>
-                Certificates
-              </Text>
-              {activeTab === 'certificates' && <View style={styles.tabActiveDot} />}
-            </TouchableOpacity>
-          </View>
+          <Avatar name={profile?.displayName ?? ''} size={72} />
+          <Text style={styles.name}>{profile?.displayName ?? ''}</Text>
+          {bootstrap.data?.class ? (
+            <Text style={styles.className}>{bootstrap.data.class.name}</Text>
+          ) : null}
         </View>
-        
-        {activeTab === 'record' && (
-          <View style={styles.cardList}>
-            <GameCard 
-              title="Congklak" 
-              image={require('@/assets/images/congklak-1.png')}
-              tags={['Basic Computation', 'Algorithms']}
-              progress={70}
-            />
-            
-            <GameCard 
-              title="Benteng" 
-              image={require('@/assets/images/benteng-1.png')}
-              tags={['Basic Computation', 'Cyber Security']}
-              progress={50}
-            />
-            
-            <GameCard 
-              title="Gaple" 
-              image={require('@/assets/images/gaple-1.png')}
-              tags={['Basic Computation', 'Algorithms']}
-              progress={50}
-            />
-          </View>
-        )}
-        
-        {activeTab === 'statistics' && (
-          <View style={styles.statisticsContainer}>
-            <View style={styles.weeklyLogCard}>
-              <Text style={styles.cardHeader}>Weekly Log</Text>
-              <LineChart
-                data={{
-                  labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
-                  datasets: [
-                    {
-                      data: [10, 30, 20, 30, 10, 28, 18],
-                      color: (opacity = 1) => `rgba(46, 141, 225, ${opacity})`,
-                      strokeWidth: 2
-                    }
-                  ]
-                }}
-                width={screenWidth - 40}
-                height={160}
-                chartConfig={{
-                  backgroundColor: "#f3f8fe",
-                  backgroundGradientFrom: "#f3f8fe",
-                  backgroundGradientTo: "#f3f8fe",
-                  decimalPlaces: 0,
-                  color: (opacity = 1) => `rgba(46, 141, 225, ${opacity})`,
-                  labelColor: (opacity = 1) => `rgba(120, 120, 120, ${opacity})`,
-                  style: {
-                    borderRadius: 16
-                  },
-                  propsForDots: {
-                    r: "5",
-                    strokeWidth: "0",
-                    stroke: "#2E8DE1"
-                  }
-                }}
-                bezier
-                style={{
-                  marginVertical: 8,
-                  borderRadius: 16
-                }}
-                withInnerLines={false}
-                withOuterLines={false}
-              />
-            </View>
-            
-            <View style={styles.statsCardsRow}>
-              <View style={styles.overallActivityCard}>
-                <Text style={styles.overallActivityTitle}>Overall Activity</Text>
-                <PieChart
-                  data={pieChartData}
-                  width={screenWidth / 2 - 30}
-                  height={120}
-                  chartConfig={{
-                    backgroundColor: "#ffffff",
-                    backgroundGradientFrom: "#ffffff",
-                    backgroundGradientTo: "#ffffff",
-                    color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-                  }}
-                  accessor={"population"}
-                  backgroundColor={"transparent"}
-                  paddingLeft={"0"}
-                  center={[0, 0]}
-                  absolute
-                  hasLegend={false}
-                />
-                <View style={styles.pieChartLegend}>
-                  <View style={styles.legendItem}>
-                    <View style={[styles.legendColor, {backgroundColor: '#e74c3c'}]} />
-                    <Text style={styles.legendText}>40% Basic Computation</Text>
-                  </View>
-                  <View style={styles.legendItem}>
-                    <View style={[styles.legendColor, {backgroundColor: '#3498db'}]} />
-                    <Text style={styles.legendText}>40% Algorithms</Text>
-                  </View>
-                  <View style={styles.legendItem}>
-                    <View style={[styles.legendColor, {backgroundColor: '#f1c40f'}]} />
-                    <Text style={styles.legendText}>20% Cyber Security</Text>
-                  </View>
-                </View>
-              </View>
-              
-              <View style={styles.performanceCard}>
-                <Text style={styles.performanceTitle}>Performance Report</Text>
-                <View style={styles.circularProgressWrapper}>
-                  <AnimatedCircularProgress
-                    size={100}
-                    width={10}
-                    fill={60}
-                    tintColor="#ffffff"
-                    backgroundColor="rgba(255, 255, 255, 0.3)"
-                    rotation={0}
-                  >
-                    {
-                      (fill) => (
-                        <Text style={styles.progressText}>
-                          {`${Math.round(fill)}%`}
-                        </Text>
-                      )
-                    }
-                  </AnimatedCircularProgress>
-                </View>
-                <Text style={styles.performanceLabel}>Increase From Last Week</Text>
-              </View>
-            </View>
-          </View>
-        )}
-        
-        {activeTab === 'friends' && (
-          <View style={styles.friendsContainer}>
-            <View style={styles.friendsTabContainer}>
-              <TouchableOpacity 
-                style={[
-                  styles.friendsTab,
-                  activeFriendsTab === 'friend' && styles.friendsTabActive
-                ]}
-                onPress={() => setActiveFriendsTab('friend')}
-              >
-                <Text style={activeFriendsTab === 'friend' ? styles.friendsTabTextActive : styles.friendsTabText}>
-                  Friends
-                </Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={[
-                  styles.friendsTab,
-                  activeFriendsTab === 'request' && styles.friendsTabActive
-                ]}
-                onPress={() => setActiveFriendsTab('request')}
-              >
-                <Text style={activeFriendsTab === 'request' ? styles.friendsTabTextActive : styles.friendsTabText}>
-                  Requests
-                </Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={[
-                  styles.friendsTab,
-                  activeFriendsTab === 'pending' && styles.friendsTabActive
-                ]}
-                onPress={() => setActiveFriendsTab('pending')}
-              >
-                <Text style={activeFriendsTab === 'pending' ? styles.friendsTabTextActive : styles.friendsTabText}>
-                  Pending
-                </Text>
-              </TouchableOpacity>
-            </View>
-            
-            <View style={styles.friendsContentContainer}>
-              <View style={styles.searchContainer}>
-                <TextInput
-                  style={styles.searchInput}
-                  placeholder="Search friends..."
-                />
-                <TouchableOpacity style={styles.searchButton}>
-                  <Text style={styles.searchButtonText}>Search</Text>
-                </TouchableOpacity>
-              </View>
-              
-              {/*
-                The wallet address used to be printed here as "Your ID". It is
-                a permanent, unrotatable, publicly-linkable identifier for a
-                child, and showing it is what made impersonation practical —
-                anyone who read it off a classmate's screen could sign in as
-                them. The friend code replaces it: same purpose, rotatable, and
-                scoped to one school.
-              */}
-              <View style={styles.idContainer}>
-                <Text style={styles.idLabel}>{t("profile.friendCode")}</Text>
-                <Text
-                  numberOfLines={1}
-                  accessibilityLabel={t("profile.friendCode")}
-                  style={{ width: 200, fontWeight: 'bold'}}>{friendCode}</Text>
-              </View>
 
-              <View style={styles.friendsList}>
-                {activeFriendsTab === 'friend' && friendsList.map(friend => (
-                  <FriendCard 
-                    key={friend.id}
-                    name={friend.name}
-                    image={friend.image}
-                    type="friend"
-                  />
-                ))}
-                
-                {activeFriendsTab === 'request' && requestsList.map(friend => (
-                  <FriendCard 
-                    key={friend.id}
-                    name={friend.name}
-                    image={friend.image}
-                    type="request"
-                  />
-                ))}
-                
-                {activeFriendsTab === 'pending' && pendingList.map(friend => (
-                  <FriendCard 
-                    key={friend.id}
-                    name={friend.name}
-                    image={friend.image}
-                    type="pending"
-                  />
-                ))}
-              </View>
-            </View>
-          </View>
-        )}
+        {/*
+          Points, rank and friends — all three from server state, so this
+          header and the board tab cannot disagree about the same student.
+          The pending mark appears when unsynced attempts would change the
+          number, rather than showing a figure that will silently move.
+        */}
+        <View style={styles.statRow}>
+          <Stat
+            label={t('profile.points')}
+            value={summary ? String(summary.points) : '—'}
+            pending={sync.pending > 0}
+          />
+          <Stat
+            label={t('board.title')}
+            value={summary?.rank != null ? `#${summary.rank}` : '—'}
+          />
+          <Stat label={t('profile.friends')} value={<FriendCount accountId={accountId} />} />
+        </View>
 
-        {activeTab === 'certificates' && (
-          <View style={styles.certificateContainer}>
-            {certificateImages.map(cert => (
-              <TouchableOpacity key={cert.id} onPress={() => handleImagePress(cert.image)}>
-                <Image source={cert.image} style={styles.certificateImage} />
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
+        <FriendCode code={profile?.friendCode ?? ''} accountId={accountId} />
 
-        <Modal visible={lightboxVisible} transparent animationType="fade">
-          <Pressable style={styles.lightboxOverlay} onPress={() => setLightboxVisible(false)}>
-            <Image source={selectedImage!} style={styles.fullWidthLightboxImage} resizeMode="contain" />
-          </Pressable>
-        </Modal>
+        <View accessibilityRole="tablist" style={styles.tabs}>
+          {TABS.map((name) => (
+            <Pressable
+              key={name}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: tab === name }}
+              style={[styles.tab, tab === name && styles.tabActive]}
+              onPress={() => setTab(name)}
+            >
+              <Text style={[styles.tabLabel, tab === name && styles.tabLabelActive]}>
+                {t(`profile.tab.${name}`)}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+
+        {tab === 'record' ? <RecordTab progress={progress.data} /> : null}
+        {tab === 'statistics' ? <StatisticsTab progress={progress.data} /> : null}
+        {tab === 'friends' ? <FriendsTab accountId={accountId} /> : null}
+        {tab === 'certificates' ? <CertificatesTab accountId={accountId} /> : null}
+
+        <Settings accountId={accountId} />
       </ScrollView>
     </SafeAreaView>
-  ) : (
-    <SafeAreaView style={styles.container}>
-        <ScrollView showsVerticalScrollIndicator={false}>
-            {/* Header */}
-            <View style={styles.header}>
-              <Image 
-                source={require('@/assets/images/lenterra-logo.png')} 
-                style={styles.logo} 
-              />
-            </View>
-            <View style={styles.containerlogin}>
-            <ScrollView
-              ref={scrollRef}
-              horizontal
-              pagingEnabled
-              showsHorizontalScrollIndicator={false}
-              style={styles.carousel}
-              scrollEnabled={false}
-            >
-              {images.map((image, index) => (
-                <Image
-                  key={index}
-                  source={image}
-                  style={styles.image}
-                  resizeMode="cover"
-                />
-              ))}
-            </ScrollView>
-        
-              <Text style={styles.title}>Selamat Datang di Lenterra</Text>
-        
-              <TextInput
-                style={styles.input}
-                placeholder="Masukkan nama Anda"
-                value={name}
-                onChangeText={setName}
-              />
-
-              <ConnectButton
-                client={client}
-                chain={ethereum}
-                theme={lightTheme({
-                  colors: {
-                    primaryButtonBg: "#1e8449",
-                    modalBg: "#1e8449",
-                    borderColor: "#196f3d",
-                    accentButtonBg: "#196f3d",
-                    primaryText: "#ffffff",
-                    secondaryIconColor: "#a7b8b9",
-                    secondaryText: "#a7b8b9",
-                    secondaryButtonBg: "#196f3d",
-                  },
-                })}
-                wallets={[
-                  createWallet("io.metamask"),
-                  createWallet("com.coinbase.wallet"),
-                  createWallet("me.rainbow"),
-                  createWallet("com.trustwallet.app"),
-                  createWallet("io.zerion.wallet"),
-                  createWallet("xyz.argent"),
-                  createWallet("com.okex.wallet"),
-                  createWallet("com.zengo"),
-                ]}
-                connectButton={{
-                  label: "Sign in to Lenterra",
-                }}
-                connectModal={{
-                  title: "Web3 Login",
-                }}
-              />
-            </View>
-          </ScrollView>
-      </SafeAreaView>
-    )
   );
 }
 
-function GameCard({ title, image, tags, progress }: GameCardProps) {
-  const progressColor = '#2E8DE1';
-  const progressBgColor = '#E6E6E6';
-  
+function Stat({
+  label,
+  value,
+  pending = false,
+}: {
+  label: string;
+  value: React.ReactNode;
+  pending?: boolean;
+}) {
   return (
-    <View style={styles.card}>
-      <Image source={image} style={styles.cardImage} />
-      
-      <View style={styles.cardContent}>
-        <Text style={styles.cardTitle}>{title}</Text>
-        
-        <View style={styles.tagContainer}>
-          {tags.map((tag, index) => (
-            <View 
-              key={index} 
-              style={[
-                styles.tag,
-                { backgroundColor: tag.includes('Basic') ? '#FFD0CC' : 
-                                  tag.includes('Cyber') ? '#FFF5CC' : 
-                                  '#D0E6FF' }
-              ]}
+    <View style={styles.stat}>
+      <Text style={styles.statValue}>
+        {value}
+        {pending ? <PendingMark /> : null}
+      </Text>
+      <Text style={styles.statLabel}>{label}</Text>
+    </View>
+  );
+}
+
+function FriendCount({ accountId }: { accountId: string | null }) {
+  const friends = useFriends(accountId);
+  return <>{friends.data ? String(friends.data.friends.length) : '—'}</>;
+}
+
+/**
+ * The identifier a student shares.
+ *
+ * The demo printed the raw wallet address here. Under ADR-002 the address is
+ * invisible plumbing: showing a `0x…` string to a 14-year-old is confusing,
+ * unshareable out loud, and a privacy leak, since it is a permanent public
+ * identifier that follows them off this product entirely.
+ */
+function FriendCode({ code, accountId }: { code: string; accountId: string | null }) {
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+  const [rotating, setRotating] = useState(false);
+
+  const rotate = async () => {
+    if (!accountId) return;
+    setRotating(true);
+    try {
+      await rpc(accountId, 'v1.profile.update', {
+        rotateFriendCode: true,
+        idempotencyKey: `rotate-${Date.now()}`,
+      });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.bootstrap(accountId) });
+    } catch {
+      // Nothing changed; the old code still works.
+    } finally {
+      setRotating(false);
+    }
+  };
+
+  return (
+    <View style={styles.codeCard}>
+      <Text style={styles.codeLabel}>{t('profile.friendCode')}</Text>
+      <Text accessibilityLabel={code.split('').join(' ')} style={styles.code}>
+        {code}
+      </Text>
+      <Text style={styles.codeHelp}>{t('profile.friendCodeHelp')}</Text>
+      {/* Rotation exists because a code written on a whiteboard is a code
+          that leaves the room, and a student must be able to take it back. */}
+      <Pressable
+        accessibilityRole="button"
+        disabled={rotating}
+        onPress={() => void rotate()}
+        style={styles.linkButton}
+      >
+        <Text style={styles.linkLabel}>{t('profile.rotateFriendCode')}</Text>
+      </Pressable>
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Record
+// ---------------------------------------------------------------------------
+
+function RecordTab({ progress }: { progress: Progress | undefined }) {
+  const { t } = useTranslation();
+
+  if (!progress) return <LoadingState />;
+  if (progress.games.length === 0) {
+    return <EmptyState title={t('profile.noRecordTitle')} body={t('profile.noRecordBody')} />;
+  }
+
+  return (
+    <View style={styles.section}>
+      {progress.games.map((game) => {
+        const ratio =
+          game.missionsAvailable === 0 ? 0 : game.missionsCompleted / game.missionsAvailable;
+        return (
+          <View key={game.gameId} style={styles.card}>
+            <View style={styles.cardHead}>
+              <Text style={styles.cardTitle}>{t(`games.${game.gameId}`)}</Text>
+              <Text style={styles.cardMeta}>
+                {t('profile.missionsOf', {
+                  done: game.missionsCompleted,
+                  total: game.missionsAvailable,
+                })}
+              </Text>
+            </View>
+            {/* Width reflects distinct missions passed. The demo's bars were
+                fixed at 70/50/50 and moved for nobody. */}
+            <View
+              accessibilityRole="progressbar"
+              accessibilityValue={{ min: 0, max: game.missionsAvailable, now: game.missionsCompleted }}
+              style={styles.barTrack}
             >
-              <Text style={styles.tagText}>{tag}</Text>
+              <View style={[styles.barFill, { width: `${Math.round(ratio * 100)}%` }]} />
+            </View>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Statistics
+// ---------------------------------------------------------------------------
+
+function StatisticsTab({ progress }: { progress: Progress | undefined }) {
+  const { t } = useTranslation();
+
+  const byDomain = useMemo(() => {
+    const groups: Record<DomainName, Progress['mastery']> = {
+      computation: [],
+      algorithms: [],
+      security: [],
+    };
+    for (const node of progress?.mastery ?? []) groups[domainOf(node.skillNodeId)].push(node);
+    return groups;
+  }, [progress]);
+
+  if (!progress) return <LoadingState />;
+
+  const weeks = progress.weeklyActivity;
+  const peak = weeks.reduce((max, week) => Math.max(max, week.attempts), 0);
+
+  return (
+    <View style={styles.section}>
+      {/*
+        Under two weeks of history there is no chart worth drawing. The demo
+        drew the same shape for everyone including a student on day one, which
+        makes the chart a decoration that looks like evidence.
+      */}
+      {weeks.length < MIN_WEEKS_FOR_CHART ? (
+        <EmptyState title={t('profile.notEnoughDataTitle')} body={t('profile.notEnoughDataBody')} />
+      ) : (
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>{t('profile.activity')}</Text>
+          <View style={styles.chart}>
+            {weeks.map((week) => (
+              <View key={week.date} style={styles.chartColumn}>
+                <View
+                  accessibilityLabel={t('profile.weekSummary', {
+                    date: week.date,
+                    attempts: week.attempts,
+                    minutes: week.minutes,
+                  })}
+                  style={[
+                    styles.chartBar,
+                    { height: peak === 0 ? 2 : Math.max(2, (week.attempts / peak) * 80) },
+                  ]}
+                />
+              </View>
+            ))}
+          </View>
+        </View>
+      )}
+
+      {/*
+        Bands per node, grouped by domain (PRD-APP-053). No percentages: the
+        underlying value is a probability estimate, and asking a 14-year-old to
+        interpret one invites both comparison and gaming.
+      */}
+      {(Object.keys(byDomain) as DomainName[]).map((domain) => {
+        const nodes = byDomain[domain];
+        if (nodes.length === 0) return null;
+        return (
+          <View key={domain} style={styles.card}>
+            <View style={[styles.domainTag, { backgroundColor: domainColors[domain].bg }]}>
+              <Text style={[styles.domainTagText, { color: domainColors[domain].fg }]}>
+                {t(`progress.domain.${domain}`)}
+              </Text>
+            </View>
+
+            {nodes.map((node) => (
+              <View key={node.skillNodeId} style={styles.nodeRow}>
+                <Text style={styles.nodeName}>{t(`skill.${node.skillNodeId}`)}</Text>
+                <View style={styles.nodeRight}>
+                  {/* The band name carries the meaning; colour only
+                      reinforces it (PRD-ACC-013). */}
+                  <View
+                    style={[styles.bandChip, { backgroundColor: bandColors[node.band].bg }]}
+                  >
+                    <Text style={[styles.bandText, { color: bandColors[node.band].fg }]}>
+                      {t(`progress.band.${node.band}`)}
+                    </Text>
+                  </View>
+                  {node.evidenceCount === 1 ? (
+                    <Text style={styles.thin}>{t('progress.needsSecondSource')}</Text>
+                  ) : null}
+                </View>
+              </View>
+            ))}
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Friends
+// ---------------------------------------------------------------------------
+
+function FriendsTab({ accountId }: { accountId: string | null }) {
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+  const friends = useFriends(accountId);
+  const [code, setCode] = useState('');
+  const [lookupError, setLookupError] = useState<string | null>(null);
+  const [subject, setSubject] = useState<Friend | null>(null);
+
+  const refresh = () => {
+    if (accountId) void queryClient.invalidateQueries({ queryKey: queryKeys.friends(accountId) });
+  };
+
+  const lookup = async (value: string) => {
+    if (!accountId || value.length < 4) return;
+    setLookupError(null);
+    try {
+      const found = await findByCode(accountId, value);
+      if (!found) {
+        // The server does not distinguish "no such code" from "another
+        // school", so neither does this message.
+        setLookupError(t('profile.friendCodeNotFound'));
+        return;
+      }
+      await addFriend(accountId, found.userId);
+      setCode('');
+      refresh();
+    } catch {
+      setLookupError(t('error.offline'));
+    }
+  };
+
+  if (friends.isLoading && !friends.data) return <LoadingState />;
+  if (friends.isError && !friends.data) {
+    return <ErrorState onRetry={() => friends.refetch()} />;
+  }
+
+  const lists = friends.data;
+
+  return (
+    <View style={styles.section}>
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>{t('profile.addFriend')}</Text>
+        <CodeInput value={code} onChange={setCode} onSubmit={() => void lookup(code)} />
+        {lookupError ? (
+          <Text accessibilityRole="alert" style={styles.error}>
+            {lookupError}
+          </Text>
+        ) : null}
+      </View>
+
+      {lists && lists.incoming.length > 0 ? (
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>{t('profile.requests')}</Text>
+          {lists.incoming.map((friend: Friend) => (
+            <View key={friend.userId} style={styles.friendRow}>
+              <Avatar name={friend.displayName} size={36} />
+              <Text style={styles.friendName}>{friend.displayName}</Text>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() =>
+                  accountId && void addFriend(accountId, friend.userId).then(refresh)
+                }
+              >
+                <Text style={styles.linkLabel}>{t('common.accept')}</Text>
+              </Pressable>
+              {/* Refusing is as prominent as accepting. A request a child
+                  cannot decline is not a request (PRD-SOC-012). */}
+              <Pressable
+                accessibilityRole="button"
+                onPress={() =>
+                  accountId && void removeFriend(accountId, friend.userId).then(refresh)
+                }
+              >
+                <Text style={styles.declineLabel}>{t('common.decline')}</Text>
+              </Pressable>
             </View>
           ))}
         </View>
-        
-        <View style={styles.progressBarContainer}>
-          <View style={[styles.progressBar, {backgroundColor: progressBgColor}]}>
-            <View 
-              style={[
-                styles.progressFill, 
-                {
-                  backgroundColor: progressColor,
-                  width: `${progress}%`
-                }
-              ]} 
-            />
-          </View>
-          <Text style={styles.progressText}>{progress}%</Text>
-        </View>
+      ) : null}
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>{t('profile.friends')}</Text>
+        {!lists || lists.friends.length === 0 ? (
+          <Text style={styles.muted}>{t('profile.noFriendsYet')}</Text>
+        ) : (
+          lists.friends.map((friend: Friend) => (
+            <Pressable
+              key={friend.userId}
+              accessibilityRole="button"
+              accessibilityLabel={friend.displayName}
+              style={styles.friendRow}
+              onLongPress={() => setSubject(friend)}
+            >
+              <Avatar name={friend.displayName} size={36} />
+              <Text style={styles.friendName}>{friend.displayName}</Text>
+              <Pressable
+                accessibilityRole="button"
+                hitSlop={8}
+                onPress={() => setSubject(friend)}
+              >
+                <Text style={styles.linkLabel}>{t('common.more')}</Text>
+              </Pressable>
+            </Pressable>
+          ))
+        )}
       </View>
-    </View>
-  );
-}
 
-function FriendCard({ name, image, type }: FriendCardProps) {
-  return (
-    <View style={styles.friendCard}>
-      <Image source={image} style={styles.friendAvatar} />
-      <Text style={styles.friendName}>{name}</Text>
-      
-      {type === 'request' && (
-        <View style={styles.requestButtons}>
-          <TouchableOpacity style={styles.acceptButton}>
-            <Text style={styles.acceptButtonText}>✓</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.rejectButton}>
-            <Text style={styles.rejectButtonText}>✕</Text>
-          </TouchableOpacity>
+      {lists && lists.outgoing.length > 0 ? (
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>{t('profile.pending')}</Text>
+          {lists.outgoing.map((friend: Friend) => (
+            <View key={friend.userId} style={styles.friendRow}>
+              <Avatar name={friend.displayName} size={36} />
+              <Text style={styles.friendName}>{friend.displayName}</Text>
+              <Text style={styles.muted}>{t('profile.awaitingReply')}</Text>
+            </View>
+          ))}
         </View>
-      )}
-      
-      {type === 'pending' && (
-        <TouchableOpacity style={styles.cancelButton}>
-          <Text style={styles.cancelButtonText}>✕</Text>
-        </TouchableOpacity>
-      )}
+      ) : null}
+
+      <SafetySheet
+        friend={subject}
+        accountId={accountId}
+        onClose={() => setSubject(null)}
+        onDone={refresh}
+      />
     </View>
   );
 }
 
-function NavItem({ icon, label, active }: NavItemProps) {
+/** Codes are short and typed by children, so the field is deliberately plain. */
+function CodeInput({
+  value,
+  onChange,
+  onSubmit,
+}: {
+  value: string;
+  onChange: (next: string) => void;
+  onSubmit: () => void;
+}) {
+  const { t } = useTranslation();
+
   return (
-    <TouchableOpacity style={styles.navItem}>
-      <Image 
-        source={icon} 
-        style={[
-          styles.navIcon,
-          active && { tintColor: '#2E8DE1' }
-        ]} 
+    <View style={styles.codeInputRow}>
+      <TextInput
+        accessibilityLabel={t('profile.friendCode')}
+        autoCapitalize="characters"
+        autoCorrect={false}
+        maxLength={8}
+        onChangeText={(next: string) => onChange(next.toUpperCase())}
+        onSubmitEditing={onSubmit}
+        placeholder="ABC123"
+        placeholderTextColor={palette.ink500}
+        returnKeyType="done"
+        style={styles.codeInput}
+        value={value}
       />
-      <Text 
-        style={[
-          styles.navLabel,
-          active && { color: '#2E8DE1' }
-        ]}
-      >
-        {label}
+      <Pressable accessibilityRole="button" onPress={onSubmit} style={styles.codeSubmit}>
+        <Text style={styles.codeSubmitLabel}>{t('common.add')}</Text>
+      </Pressable>
+    </View>
+  );
+}
+
+/**
+ * Block and report.
+ *
+ * Offered together because a child who has been bullied should not have to
+ * work out which one they wanted. Blocking protects them now; reporting is
+ * what reaches an adult (PRD-SOC-014, TRD-SEC-016).
+ */
+function SafetySheet({
+  friend,
+  accountId,
+  onClose,
+  onDone,
+}: {
+  friend: Friend | null;
+  accountId: string | null;
+  onClose: () => void;
+  onDone: () => void;
+}) {
+  const { t } = useTranslation();
+  if (!friend) return null;
+
+  const act = async (action: 'remove' | 'block' | 'report') => {
+    if (!accountId) return;
+    try {
+      if (action === 'remove') await removeFriend(accountId, friend.userId);
+      if (action === 'block') await blockUser(accountId, friend.userId);
+      if (action === 'report') {
+        await reportUser(accountId, friend.userId, 'bullying', 'friends');
+        // Blocking follows a report automatically. Telling a child their
+        // report is "being reviewed" while leaving the other person able to
+        // reach them is not protection.
+        await blockUser(accountId, friend.userId);
+        Alert.alert(t('profile.reportSentTitle'), t('profile.reportSentBody'));
+      }
+      onDone();
+    } finally {
+      onClose();
+    }
+  };
+
+  return (
+    <Modal animationType="slide" onRequestClose={onClose} transparent visible>
+      <Pressable accessibilityRole="button" style={styles.backdrop} onPress={onClose}>
+        <View style={styles.sheet}>
+          <Text style={styles.sheetTitle}>{friend.displayName}</Text>
+
+          <Pressable accessibilityRole="button" style={styles.sheetItem} onPress={() => void act('remove')}>
+            <Text style={styles.sheetLabel}>{t('profile.removeFriend')}</Text>
+          </Pressable>
+          <Pressable accessibilityRole="button" style={styles.sheetItem} onPress={() => void act('block')}>
+            <Text style={styles.sheetLabel}>{t('profile.block')}</Text>
+          </Pressable>
+          <Pressable accessibilityRole="button" style={styles.sheetItem} onPress={() => void act('report')}>
+            <Text style={styles.sheetDanger}>{t('profile.report')}</Text>
+          </Pressable>
+          <Text style={styles.sheetHelp}>{t('profile.reportHelp')}</Text>
+
+          <Pressable accessibilityRole="button" style={styles.sheetItem} onPress={onClose}>
+            <Text style={styles.sheetLabel}>{t('common.cancel')}</Text>
+          </Pressable>
+        </View>
+      </Pressable>
+    </Modal>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Certificates
+// ---------------------------------------------------------------------------
+
+function CertificatesTab({ accountId }: { accountId: string | null }) {
+  const { t } = useTranslation();
+  const certificates = useCertificates(accountId);
+
+  if (certificates.isLoading && !certificates.data) return <LoadingState />;
+  if (certificates.isError && !certificates.data) {
+    return <ErrorState onRetry={() => certificates.refetch()} />;
+  }
+
+  const earned = certificates.data?.earned ?? [];
+  const remaining = certificates.data?.progress ?? [];
+
+  return (
+    <View style={styles.section}>
+      {earned.map((certificate: Certificate) => (
+        <CertificateCard key={certificate.id} certificate={certificate} />
+      ))}
+
+      {earned.length === 0 ? (
+        <EmptyState title={t('profile.noCertificatesTitle')} body={t('profile.noCertificatesBody')} />
+      ) : null}
+
+      {/* What is left, and how much of it. An empty tab saying only "none
+          yet" tells a student nothing about how to change that. */}
+      {remaining.map((item: CertificateProgress) => (
+        <View key={item.definitionId} style={styles.card}>
+          <Text style={styles.cardTitle}>{t(`certificate.${item.definitionId}.title`)}</Text>
+          <Text style={styles.muted}>
+            {t('profile.certificateRemaining', {
+              remaining: item.nodesRemaining,
+              total: item.requiredNodes.length,
+            })}
+          </Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+function CertificateCard({ certificate }: { certificate: Certificate }) {
+  const { t } = useTranslation();
+  const issued = new Date(certificate.issuedAt);
+
+  return (
+    <View style={styles.certificate}>
+      <Text style={styles.certificateTitle}>
+        {t(`certificate.${certificate.definitionId}.title`)}
       </Text>
-    </TouchableOpacity>
+      <Text style={styles.certificateIssuer}>{t('certificate.issuer')}</Text>
+      <Text style={styles.certificateDate}>
+        {t('certificate.issuedOn', { date: issued.toLocaleDateString() })}
+      </Text>
+
+      {/*
+        A certificate has to state its own limits (PRD-RWD-013). Naming the
+        evidence behind it — how many validated attempts, over how long — is
+        what keeps it from being read as a qualification it is not.
+      */}
+      <Text style={styles.certificateEvidence}>
+        {t('certificate.evidence', {
+          attempts: certificate.evidenceSummary.attempts,
+          days: certificate.evidenceSummary.periodDays,
+          skills: certificate.evidenceSummary.nodes.length,
+        })}
+      </Text>
+      <Text style={styles.certificateDisclaimer}>{t('certificate.disclaimer')}</Text>
+
+      {/* Inert in R1 and labelled as such, rather than a button that
+          silently does nothing (20-11). */}
+      <Text style={styles.certificateVerify}>{t('certificate.verifySoon')}</Text>
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Settings
+// ---------------------------------------------------------------------------
+
+function Settings({ accountId }: { accountId: string | null }) {
+  const { t, i18n } = useTranslation();
+  const sync = useSync();
+  const bootstrap = useBootstrap(accountId);
+
+  const confirmSignOut = () => {
+    // The warning is the point: signing out on a borrowed phone with work
+    // still queued must not silently look like a clean exit (PRD-ONB-015).
+    const body =
+      sync.pending > 0
+        ? t('profile.signOutPendingBody', { count: sync.pending })
+        : t('profile.signOutBody');
+
+    Alert.alert(t('profile.signOut'), body, [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('profile.signOut'),
+        style: 'destructive',
+        onPress: () => {
+          if (accountId) signOut(accountId);
+        },
+      },
+    ]);
+  };
+
+  const requestDeletion = () => {
+    Alert.alert(t('profile.deleteAccount'), t('profile.deleteAccountBody'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('common.continue'),
+        style: 'destructive',
+        onPress: () => {
+          if (!accountId) return;
+          void rpc(accountId, 'v1.account.delete.request', {
+            confirm: true,
+            idempotencyKey: `delete-${accountId}`,
+          })
+            .then(() => Alert.alert(t('profile.deleteScheduledTitle'), t('profile.deleteScheduledBody')))
+            .catch(() => Alert.alert(t('error.generic')));
+        },
+      },
+    ]);
+  };
+
+  const toggleLanguage = () => {
+    void i18n.changeLanguage(i18n.language === 'id' ? 'en' : 'id');
+  };
+
+  return (
+    <View style={styles.section}>
+      <Text style={styles.sectionTitle}>{t('profile.settings')}</Text>
+
+      <Row label={t('profile.language')} value={i18n.language === 'id' ? 'Bahasa Indonesia' : 'English'} onPress={toggleLanguage} />
+      {bootstrap.data?.class ? (
+        <Row label={t('profile.class')} value={bootstrap.data.class.name} />
+      ) : null}
+      <Row label={t('profile.signOut')} onPress={confirmSignOut} />
+      <Row label={t('profile.deleteAccount')} onPress={requestDeletion} danger />
+    </View>
+  );
+}
+
+function Row({
+  label,
+  value,
+  onPress,
+  danger = false,
+}: {
+  label: string;
+  value?: string;
+  onPress?: () => void;
+  danger?: boolean;
+}) {
+  return (
+    <Pressable
+      accessibilityRole={onPress ? 'button' : 'text'}
+      disabled={!onPress}
+      onPress={onPress}
+      style={styles.settingRow}
+    >
+      <Text style={[styles.settingLabel, danger && styles.settingDanger]}>{label}</Text>
+      {value ? <Text style={styles.settingValue}>{value}</Text> : null}
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#ffffff',
-  },
-  content: {
-    paddingBottom: 80,
-  },
-  header: {
-    backgroundColor: '#2E8DE1',
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
-    padding: 20,
-    paddingBottom: 10,
-    position: 'relative',
-  },
-  sunIcon: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    width: 28,
-    height: 28,
-  },
-  profileContainer: {
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  profileImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    borderWidth: 3,
-    borderColor: 'white',
-  },
-  profileName: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: 'black',
-    marginTop: 10,
-  },
-  statsContainer: {
-    backgroundColor: '#2E8DE1',
-    flexDirection: 'row',
-    borderRadius: 10,
-    marginTop: 20,
-    marginHorizontal: 10,
-    padding: 15,
-  },
-  statItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  statIcon: {
-    width: 24,
-    height: 24,
-    marginBottom: 5,
-  },
-  statTitle: {
-    fontSize: 12,
-    color: 'white',
-    fontWeight: '600',
-  },
-  statValue: {
-    fontSize: 18,
-    color: 'white',
-    fontWeight: 'bold',
-  },
-  divider: {
-    width: 1,
-    backgroundColor: 'white',
-    opacity: 0.5,
-  },
-  tabContainer: {
-    flexDirection: 'row',
-    marginTop: 20,
-    marginHorizontal: 10,
-  },
-  tab: {
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-    position: 'relative',
-  },
-  tabText: {
-    color: 'rgba(255, 255, 255, 0.7)',
-    fontWeight: '500',
-  },
-  tabActiveText: {
-    color: 'black',
-    fontWeight: 'bold',
-  },
-  tabActiveDot: {
-    position: 'absolute',
-    bottom: 0,
-    left: '50%',
-    marginLeft: -3,
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#2E8DE1',
-  },
-  
-  // Friends specific styles
-  friendsContainer: {
-    flex: 1,
-    backgroundColor: '#f3f8fe',
-  },
-  friendsTabContainer: {
-    flexDirection: 'row',
-    backgroundColor: 'white',
-    borderRadius: 8,
-    marginHorizontal: 20,
-    marginTop: 15,
-    marginBottom: 10,
-    overflow: 'hidden',
-  },
-  friendsTab: {
-    flex: 1,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  friendsTabActive: {
-    backgroundColor: '#2E8DE1',
-  },
-  friendsTabText: {
-    color: 'gray',
-    fontWeight: '500',
-    fontSize: 14,
-  },
-  friendsTabTextActive: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 14,
-  },
-  friendsContentContainer: {
-    backgroundColor: '#f0f8ff',
-    margin: 10,
-    borderRadius: 15,
-    padding: 15,
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    marginBottom: 15,
-  },
-  searchInput: {
-    flex: 1,
-    height: 40,
-    backgroundColor: 'white',
-    borderRadius: 20,
-    paddingHorizontal: 15,
-    marginRight: 10,
-  },
-  searchButton: {
-    backgroundColor: '#2E8DE1',
-    borderRadius: 20,
-    paddingHorizontal: 15,
-    justifyContent: 'center',
-  },
-  searchButtonText: {
-    color: 'white',
-    fontWeight: '500',
-  },
-  idContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  idLabel: {
-    color: '#2E8DE1',
-    fontWeight: 'bold',
-    marginRight: 8,
-  },
-  friendsList: {
-    marginTop: 5,
-  },
-  friendCard: {
-    flexDirection: 'row',
-    backgroundColor: '#FFF9CC',
-    borderRadius: 15,
-    padding: 12,
-    marginBottom: 10,
-    alignItems: 'center',
-  },
-  friendAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginRight: 15,
-  },
-  friendName: {
-    flex: 1,
-    fontWeight: '500',
-    fontSize: 16,
-  },
-  requestButtons: {
-    flexDirection: 'row',
-  },
-  acceptButton: {
-    backgroundColor: '#4CAF50',
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 8,
-  },
-  acceptButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-  },
-  rejectButton: {
-    backgroundColor: '#F44336',
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  rejectButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-  },
-  cancelButton: {
-    backgroundColor: '#F44336',
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  cancelButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-  },
-  
-  // Existing styles continued
-  cardList: {
-    padding: 15,
-  },
-  card: {
-    backgroundColor: 'white',
-    borderRadius: 15,
-    marginBottom: 15,
-    flexDirection: 'row',
-    padding: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  cardImage: {
-    width: 70,
-    height: 70,
-    borderRadius: 10,
-  },
-  cardContent: {
-    flex: 1,
-    marginLeft: 15,
-  },
-  cardTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 8,
-  },
-  tagContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginBottom: 10,
-  },
-  tag: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 20,
-    marginRight: 8,
-    marginBottom: 5,
-  },
-  tagText: {
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  progressBarContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  progressBar: {
-    flex: 1,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 10,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: 4,
-  },
-  statisticsContainer: {
-    padding: 20,
-  },
-  weeklyLogCard: {
-    backgroundColor: '#f3f8fe',
-    borderRadius: 15,
-    padding: 20,
-    marginBottom: 20,
-  },
-  cardHeader: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#2E8DE1',
-    marginBottom: 10,
-  },
-  statsCardsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  overallActivityCard: {
-    flex: 1,
-    backgroundColor: 'white',
-    borderRadius: 15,
-    padding: 15,
-    marginRight: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  overallActivityTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 5,
-  },
-  pieChartLegend: {
-    marginTop: 5,
-  },
-  legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 5,
-  },
-  legendColor: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    marginRight: 5,
-  },
-  legendText: {
-    fontSize: 11,
-    color: '#333',
-  },
-  performanceCard: {
-    flex: 1,
-    backgroundColor: '#2E8DE1',
-    borderRadius: 15,
-    padding: 15,
-    marginLeft: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-    alignItems: 'center',
-  },
-  performanceTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: 'white',
-    marginBottom: 10,
-    alignSelf: 'flex-start',
-  },
-  circularProgressWrapper: {
-    marginVertical: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  progressText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: 'white',
-  },
-  performanceLabel: {
-    fontSize: 12,
-    color: 'white',
-    marginTop: 5,
-    textAlign: 'center',
-  },
-  navItem: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  navIcon: {
-    width: 24,
-    height: 24,
-    marginBottom: 4,
-    opacity: 0.8,
-  },
-  navLabel: {
-    fontSize: 10,
-    color: '#666',
-  },
+  screen: { flex: 1, backgroundColor: palette.canvas },
+  content: { padding: spacing.lg, gap: spacing.lg, paddingBottom: spacing.xl * 2 },
 
-  titleContainer: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 8,
-	},
-  connectButton: {
-    paddingTop: 16 
-  },
-  containerlogin: {
-    flex: 1,
-    backgroundColor: 'white',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 16,
-  },
-  carousel: {
-    height: 250,
-    width: '100%',
-    marginBottom: 24,
-  },
-  image: {
-    width: screenWidth - 32,
-    height: 250,
-    borderRadius: 16,
-    marginRight: 8,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 32,
-  },
-  input: {
-    width: '100%',
-    height: 48,
-    borderColor: '#ccc',
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    marginBottom: 24,
-  },
-  logo: {
-    width: 40,
-    height: 40,
-  },
-  certificateContainer: {
+  header: { alignItems: 'center', gap: spacing.xs },
+  name: { ...typography.title, color: palette.ink900 },
+  className: { ...typography.caption, color: palette.ink500 },
+
+  statRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    padding: 10,
+    backgroundColor: palette.surface,
+    borderRadius: radius.lg,
+    paddingVertical: spacing.lg,
   },
-  certificateImage: {
-    width: 160,
-    height: 90,
-    margin: 10,
-  },
-  lightboxOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.9)',
-    justifyContent: 'center',
+  stat: { flex: 1, alignItems: 'center', gap: spacing.xs },
+  statValue: { ...typography.display, color: palette.blue600 },
+  statLabel: { ...typography.caption, color: palette.ink500 },
+
+  codeCard: {
+    backgroundColor: palette.surface,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+    gap: spacing.xs,
     alignItems: 'center',
   },
-  fullWidthLightboxImage: {
-    width: screenWidth - 40,
-    height: 'auto',
-    aspectRatio: 1.5,
-    borderRadius: 10,
+  codeLabel: { ...typography.caption, color: palette.ink500 },
+  code: { ...typography.display, color: palette.ink900, letterSpacing: 4 },
+  codeHelp: { ...typography.caption, color: palette.ink500 },
+
+  tabs: { flexDirection: 'row', gap: spacing.xs },
+  tab: {
+    flex: 1,
+    minHeight: MIN_TOUCH_TARGET,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.md,
+    backgroundColor: palette.surface,
   },
+  tabActive: { backgroundColor: palette.blue600 },
+  tabLabel: { ...typography.caption, color: palette.ink700 },
+  tabLabelActive: { color: palette.surface, fontWeight: '700' },
+
+  section: { gap: spacing.md },
+  sectionTitle: { ...typography.heading, color: palette.ink900 },
+
+  card: {
+    backgroundColor: palette.surface,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+    gap: spacing.sm,
+  },
+  cardHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
+  cardTitle: { ...typography.label, color: palette.ink900 },
+  cardMeta: { ...typography.caption, color: palette.ink500 },
+
+  barTrack: { height: 8, borderRadius: radius.pill, backgroundColor: palette.ink100 },
+  barFill: { height: 8, borderRadius: radius.pill, backgroundColor: palette.blue600 },
+
+  chart: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.xs, height: 92 },
+  chartColumn: { flex: 1, justifyContent: 'flex-end' },
+  chartBar: { borderRadius: radius.sm, backgroundColor: palette.blue600 },
+
+  domainTag: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.pill,
+  },
+  domainTagText: { ...typography.caption, fontWeight: '700' },
+
+  nodeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+    minHeight: MIN_TOUCH_TARGET,
+  },
+  nodeName: { ...typography.body, color: palette.ink700, flex: 1 },
+  nodeRight: { alignItems: 'flex-end', gap: spacing.xs },
+  bandChip: { paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: radius.pill },
+  bandText: { ...typography.caption, fontWeight: '700' },
+  thin: { ...typography.caption, color: palette.warning600 },
+
+  friendRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    minHeight: MIN_TOUCH_TARGET,
+  },
+  friendName: { ...typography.body, color: palette.ink900, flex: 1 },
+  muted: { ...typography.caption, color: palette.ink500 },
+  error: { ...typography.caption, color: palette.danger600 },
+
+  codeInputRow: { flexDirection: 'row', gap: spacing.sm, alignItems: 'center' },
+  codeInput: {
+    flex: 1,
+    minHeight: MIN_TOUCH_TARGET,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: palette.ink100,
+    paddingHorizontal: spacing.md,
+    ...typography.body,
+    color: palette.ink900,
+    letterSpacing: 2,
+  },
+  codeSubmit: {
+    minHeight: MIN_TOUCH_TARGET,
+    paddingHorizontal: spacing.lg,
+    justifyContent: 'center',
+    borderRadius: radius.md,
+    backgroundColor: palette.blue600,
+  },
+  codeSubmitLabel: { ...typography.label, color: palette.surface },
+
+  linkButton: { minHeight: MIN_TOUCH_TARGET, justifyContent: 'center' },
+  linkLabel: { ...typography.label, color: palette.blue600 },
+  declineLabel: { ...typography.label, color: palette.ink500 },
+
+  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
+  sheet: {
+    backgroundColor: palette.surface,
+    borderTopLeftRadius: radius.lg,
+    borderTopRightRadius: radius.lg,
+    padding: spacing.lg,
+    gap: spacing.xs,
+  },
+  sheetTitle: { ...typography.heading, color: palette.ink900, marginBottom: spacing.sm },
+  sheetItem: { minHeight: MIN_TOUCH_TARGET, justifyContent: 'center' },
+  sheetLabel: { ...typography.body, color: palette.ink900 },
+  sheetDanger: { ...typography.body, color: palette.danger600, fontWeight: '700' },
+  sheetHelp: { ...typography.caption, color: palette.ink500, marginBottom: spacing.sm },
+
+  certificate: {
+    backgroundColor: palette.surface,
+    borderRadius: radius.lg,
+    borderLeftWidth: 4,
+    borderLeftColor: palette.blue600,
+    padding: spacing.lg,
+    gap: spacing.xs,
+  },
+  certificateTitle: { ...typography.heading, color: palette.ink900 },
+  certificateIssuer: { ...typography.caption, color: palette.ink500 },
+  certificateDate: { ...typography.caption, color: palette.ink500 },
+  certificateEvidence: { ...typography.body, color: palette.ink700, marginTop: spacing.sm },
+  certificateDisclaimer: { ...typography.caption, color: palette.ink500, fontStyle: 'italic' },
+  certificateVerify: { ...typography.caption, color: palette.ink500 },
+
+  settingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    minHeight: MIN_TOUCH_TARGET,
+    backgroundColor: palette.surface,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.lg,
+  },
+  settingLabel: { ...typography.body, color: palette.ink900 },
+  settingDanger: { color: palette.danger600 },
+  settingValue: { ...typography.caption, color: palette.ink500 },
 });

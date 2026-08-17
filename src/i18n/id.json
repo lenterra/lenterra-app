@@ -1,6 +1,6 @@
 {
   "common": {
-    "continue": "Lanjutkan",
+    "continue": "Lanjut",
     "back": "Kembali",
     "cancel": "Batal",
     "retry": "Coba lagi",
@@ -9,7 +9,11 @@
     "offline": "Tidak ada koneksi",
     "pending": "Menunggu sinkronisasi",
     "syncNow": "Sinkronkan sekarang",
-    "seeAll": "Lihat semua"
+    "seeAll": "Lihat semua",
+    "accept": "Terima",
+    "decline": "Tolak",
+    "add": "Tambah",
+    "more": "Lainnya"
   },
   "auth": {
     "welcomeTitle": "Belajar lewat permainan tradisional",
@@ -172,7 +176,41 @@
     "settings": "Pengaturan",
     "language": "Bahasa",
     "dataSaver": "Hemat kuota",
-    "dataSaverHelp": "Hanya unduh materi saat terhubung Wi-Fi"
+    "dataSaverHelp": "Hanya unduh materi saat terhubung Wi-Fi",
+    "tab": {
+      "record": "Rekam Jejak",
+      "statistics": "Statistik",
+      "friends": "Teman",
+      "certificates": "Sertifikat"
+    },
+    "class": "Kelas",
+    "requests": "Permintaan teman",
+    "pending": "Terkirim",
+    "awaitingReply": "Menunggu jawaban",
+    "noFriendsYet": "Belum ada teman. Bagikan kodemu ke teman sekelas.",
+    "missionsOf": "{{done}} dari {{total}} misi",
+    "noRecordTitle": "Belum ada yang dimainkan",
+    "noRecordBody": "Selesaikan satu misi, kemajuanmu akan muncul di sini.",
+    "notEnoughDataTitle": "Riwayatnya belum cukup",
+    "notEnoughDataBody": "Main selama beberapa minggu, grafik aktivitasmu akan muncul di sini.",
+    "activity": "Aktivitas",
+    "weekSummary": "Minggu {{date}}: {{attempts}} misi, {{minutes}} menit",
+    "removeFriend": "Hapus teman",
+    "block": "Blokir",
+    "report": "Laporkan ke guru",
+    "reportHelp": "Guru akan memeriksanya. Orang itu tidak diberi tahu siapa yang melapor.",
+    "reportSentTitle": "Laporan terkirim",
+    "reportSentBody": "Guru akan memeriksanya. Kami juga sudah memblokir orang itu untukmu.",
+    "noCertificatesTitle": "Belum ada sertifikat",
+    "noCertificatesBody": "Sertifikat butuh beberapa kemampuan yang sudah dikuasai, dibuktikan lewat lebih dari satu misi, dalam lebih dari satu hari.",
+    "certificateRemaining": "{{remaining}} dari {{total}} kemampuan lagi",
+    "signOut": "Keluar",
+    "signOutBody": "Kamu bisa masuk lagi kapan saja.",
+    "signOutPendingBody": "{{count}} hasil belum terkirim. Semuanya tersimpan di HP ini dan akan terkirim saat kamu masuk lagi.",
+    "deleteAccount": "Hapus akun saya",
+    "deleteAccountBody": "Ini menghapus akunmu dan semua yang sudah kamu kerjakan. Berlaku dalam 30 hari, dan kamu bisa membatalkannya sebelum itu.",
+    "deleteScheduledTitle": "Penghapusan dijadwalkan",
+    "deleteScheduledBody": "Akunmu akan dihapus dalam 30 hari. Beri tahu gurumu kalau kamu berubah pikiran."
   },
   "sync": {
     "pendingCount": "{{count}} menunggu terkirim",
@@ -191,5 +229,60 @@
     "sessionExpired": "Masuk lagi untuk melanjutkan",
     "updateRequired": "Perbarui aplikasi untuk melanjutkan",
     "catalogStale": "Materimu perlu diperbarui"
+  },
+  "certificate": {
+    "issuer": "Diterbitkan oleh Lenterra",
+    "issuedOn": "Terbit {{date}}",
+    "evidence": "Berdasarkan {{attempts}} misi terperiksa yang mencakup {{skills}} kemampuan, selama {{days}} hari.",
+    "disclaimer": "Ini catatan latihan dari Lenterra. Bukan ijazah negara dan bukan akreditasi industri.",
+    "verifySoon": "Verifikasi yang bisa dibagikan menyusul nanti.",
+    "cert": {
+      "comp": {
+        "foundations": {
+          "title": "Dasar Komputasi"
+        }
+      },
+      "algo": {
+        "foundations": {
+          "title": "Dasar Algoritma"
+        },
+        "strategy": {
+          "title": "Strategi dan Optimasi"
+        }
+      },
+      "sec": {
+        "foundations": {
+          "title": "Dasar Keamanan Siber"
+        },
+        "defense": {
+          "title": "Pertahanan dan Respons"
+        }
+      }
+    }
+  },
+  "skill": {
+    "comp": {
+      "counting": "Berhitung",
+      "arithmetic": "Aritmetika",
+      "estimation": "Memperkirakan",
+      "modular": "Putaran dan sisa"
+    },
+    "algo": {
+      "sequencing": "Urutan langkah",
+      "iteration": "Pengulangan",
+      "branching": "Memilih antar pilihan",
+      "state-eval": "Membaca posisi",
+      "lookahead": "Berpikir ke depan",
+      "greedy": "Menahan langkah yang menggoda",
+      "optimization": "Mencari langkah terbaik"
+    },
+    "sec": {
+      "assets": "Apa yang perlu dijaga",
+      "threats": "Mengenali ancaman",
+      "access": "Siapa yang boleh masuk",
+      "defense": "Menjaga posisi",
+      "risk": "Menimbang risiko",
+      "response": "Menanggapi serangan"
+    }
   }
 }
