@@ -18,9 +18,7 @@
   "auth": {
     "welcomeTitle": "Belajar lewat permainan tradisional",
     "welcomeBody": "Congklak dan Benteng, dengan kemampuan yang terukur.",
-    "signInEmail": "Masuk dengan email",
-    "signInGoogle": "Masuk dengan Google",
-    "joinWithCode": "Punya kode kelas?",
+    "joinWithCode": "Masuk dengan kode kelas",
     "codeLabel": "Kode kelas",
     "codePlaceholder": "6 huruf dari gurumu",
     "codeInvalid": "Kode kelas itu tidak berlaku",
@@ -36,7 +34,8 @@
     "signOutWarningTitle": "Keluar sekarang?",
     "signOutWarningPending": "Ada {{count}} hasil yang belum terkirim. Hasil itu tetap tersimpan di HP ini dan akan terkirim saat kamu masuk lagi.",
     "recognizeYourself": "Kenali profilmu",
-    "recognizeHelp": "Kalau kamu pernah pakai kelas ini, pilih profilmu. Gurumu yang menyetujui."
+    "recognizeHelp": "Kalau kamu pernah pakai kelas ini, pilih profilmu. Gurumu yang menyetujui.",
+    "codeFromTeacher": "Kode kelasmu ada pada gurumu."
   },
   "home": {
     "greeting": "Halo, {{name}}",
@@ -267,8 +266,12 @@
     "deleteAccountBody": "Ini menghapus akunmu dan semua yang sudah kamu kerjakan. Berlaku dalam 30 hari, dan kamu bisa membatalkannya sebelum itu.",
     "deleteScheduledTitle": "Penghapusan dijadwalkan",
     "deleteScheduledBody": "Akunmu akan dihapus dalam 30 hari. Beri tahu gurumu kalau kamu berubah pikiran.",
-    "addEmail": "Tambahkan email",
-    "addEmailBody": "Dengan email, kamu bisa masuk lagi kalau ponsel ini tidak ada, dan sertifikatmu punya tempat untuk diterbitkan. Kemajuanmu tetap sama."
+    "connectWallet": "Hubungkan dompet",
+    "connectWalletBody": "Tidak wajib. Kalau kamu sudah pakai aplikasi dompet, menghubungkannya membuatmu bisa masuk lagi dari HP lain. Kemajuan dan sertifikatmu tetap sama, dihubungkan atau tidak.",
+    "connectWalletConfirm": "Kamu akan diarahkan ke aplikasi dompetmu untuk menyetujui.",
+    "walletConnected": "Dompet terhubung",
+    "walletConnectedBody": "Sekarang kamu bisa masuk dari HP lain dengan dompet ini.",
+    "walletInUse": "Dompet itu sudah dipakai akun lain. Masuk dengan dompet itu saja."
   },
   "sync": {
     "pendingCount": "{{count}} menunggu terkirim",

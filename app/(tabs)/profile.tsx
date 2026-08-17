@@ -776,21 +776,22 @@ function Settings({ accountId }: { accountId: string | null }) {
   };
 
   /**
-   * Offer an email to a student who joined with a class code.
+   * Offer a way back in to a student who joined with a class code.
    *
-   * Two things they cannot do without one, and both are worth saying plainly
-   * rather than burying in a settings row: they cannot get back in if the phone
-   * they borrowed goes away, and a certificate has to be issued to an address
-   * they do not have yet.
+   * They have no password and no email, so losing this phone means asking a
+   * teacher to hand the profile back. Somebody who already has a wallet can use
+   * that instead — which is worth saying plainly rather than burying in a
+   * settings row.
    *
-   * It routes to the existing email screen rather than repeating its two-step
-   * code entry here. That screen knows the account is already signed in, so it
-   * upgrades instead of creating anything.
+   * What it does **not** say is that anything is missing. A certificate is
+   * issued and meaningful without a wallet, and a row that implied otherwise
+   * would be pressuring a child toward a crypto app to get something they
+   * already have.
    */
   const startUpgrade = () => {
-    Alert.alert(t('profile.addEmail'), t('profile.addEmailBody'), [
+    Alert.alert(t('profile.connectWallet'), t('profile.connectWalletBody'), [
       { text: t('common.cancel'), style: 'cancel' },
-      { text: t('common.continue'), onPress: () => router.push('/(auth)/email?upgrade=1') },
+      { text: t('common.continue'), onPress: () => router.push('/(auth)/wallet') },
     ]);
   };
 
@@ -803,7 +804,7 @@ function Settings({ accountId }: { accountId: string | null }) {
         <Row label={t('profile.class')} value={bootstrap.data.class.name} />
       ) : null}
       {bootstrap.data?.profile.hasWallet === false ? (
-        <Row testID="profile-add-email" label={t('profile.addEmail')} onPress={startUpgrade} />
+        <Row testID="profile-connect-wallet" label={t('profile.connectWallet')} onPress={startUpgrade} />
       ) : null}
       <Row label={t('profile.signOut')} onPress={confirmSignOut} />
       <Row label={t('profile.deleteAccount')} onPress={requestDeletion} danger />

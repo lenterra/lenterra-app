@@ -4,8 +4,8 @@ export default function AuthLayout() {
 	return (
 		<Stack screenOptions={{ headerShown: false }}>
 			<Stack.Screen name="welcome" />
-			<Stack.Screen name="email" />
 			<Stack.Screen name="join" />
+			<Stack.Screen name="wallet" />
 			<Stack.Screen name="name" />
 		</Stack>
 	);

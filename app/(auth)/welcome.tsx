@@ -6,46 +6,30 @@
  * Asking a student in NTT to install a crypto wallet before they can play a
  * Congklak mission is the single largest access barrier the demo has.
  *
- * Nothing on this screen mentions a wallet, a chain, or crypto. An address is
- * created behind the sign-in because R3 certificates need somewhere to live;
- * that is an implementation detail and it stays one.
+ * **There is one way in now: the code the teacher wrote on the board.** The
+ * email and Google buttons that used to sit above it are gone. Each asked a
+ * student to have an inbox, and the students this is built for often share a
+ * phone and have never had one; each also put a third party between a child and
+ * the start of a lesson.
+ *
+ * With one route in, this screen has no decision left on it. That is the point:
+ * a student who cannot read the two options is not helped by being given them,
+ * and thirty students onboarding at once means thirty chances for the wrong one
+ * to be chosen.
+ *
+ * Nothing here mentions a wallet, a chain, or crypto — there is no longer one
+ * to mention at sign-in at all.
  */
 
 import { useRouter } from "expo-router";
-import { useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 
-import { AuthError, signIn } from "@/src/features/onboarding/auth";
 import { MIN_TOUCH_TARGET, palette, radius, spacing, typography } from "@/src/ui/tokens";
 
 export default function WelcomeScreen() {
 	const { t } = useTranslation();
 	const router = useRouter();
-	const [busy, setBusy] = useState(false);
-	const [error, setError] = useState<string | null>(null);
-
-	async function onGoogle() {
-		setBusy(true);
-		setError(null);
-		try {
-			await signIn("google");
-			router.replace("/(tabs)");
-		} catch (err) {
-			// The reason decides whether "try again" is useful advice. An
-			// unreachable verifier during a class onboarding session is worth
-			// retrying; a cancelled sheet is not an error at all.
-			if (err instanceof AuthError && err.reason === "cancelled") {
-				setError(null);
-			} else if (err instanceof AuthError && err.reason === "verifier_unreachable") {
-				setError(t("error.offline"));
-			} else {
-				setError(t("error.generic"));
-			}
-		} finally {
-			setBusy(false);
-		}
-	}
 
 	return (
 		<View testID="welcome-screen" style={styles.screen}>
@@ -57,43 +41,15 @@ export default function WelcomeScreen() {
 			<View style={styles.actions}>
 				<Pressable
 					accessibilityRole="button"
-					testID="sign-in-email"
-					accessibilityLabel={t("auth.signInEmail")}
-					style={[styles.primary, busy && styles.disabled]}
-					disabled={busy}
-					onPress={() => router.push("/(auth)/email")}
-				>
-					<Text style={styles.primaryLabel}>{t("auth.signInEmail")}</Text>
-				</Pressable>
-
-				<Pressable
-					accessibilityRole="button"
-					accessibilityLabel={t("auth.signInGoogle")}
-					style={[styles.secondary, busy && styles.disabled]}
-					disabled={busy}
-					onPress={onGoogle}
-				>
-					{busy ? (
-						<ActivityIndicator color={palette.blue600} />
-					) : (
-						<Text style={styles.secondaryLabel}>{t("auth.signInGoogle")}</Text>
-					)}
-				</Pressable>
-
-				<Pressable
-					accessibilityRole="button"
-					style={styles.tertiary}
 					testID="join-with-class-code"
+					accessibilityLabel={t("auth.joinWithCode")}
+					style={styles.primary}
 					onPress={() => router.push("/(auth)/join")}
 				>
-					<Text style={styles.tertiaryLabel}>{t("auth.joinWithCode")}</Text>
+					<Text style={styles.primaryLabel}>{t("auth.joinWithCode")}</Text>
 				</Pressable>
 
-				{error ? (
-					<Text accessibilityRole="alert" style={styles.error}>
-						{error}
-					</Text>
-				) : null}
+				<Text style={styles.help}>{t("auth.codeFromTeacher")}</Text>
 			</View>
 		</View>
 	);
@@ -119,18 +75,5 @@ const styles = StyleSheet.create({
 		paddingHorizontal: spacing.lg,
 	},
 	primaryLabel: { ...typography.label, color: palette.surface },
-	secondary: {
-		minHeight: MIN_TOUCH_TARGET,
-		backgroundColor: palette.surface,
-		borderColor: palette.blue600,
-		borderWidth: 1,
-		borderRadius: radius.md,
-		alignItems: "center",
-		justifyContent: "center",
-	},
-	secondaryLabel: { ...typography.label, color: palette.blue700 },
-	tertiary: { minHeight: MIN_TOUCH_TARGET, alignItems: "center", justifyContent: "center" },
-	tertiaryLabel: { ...typography.label, color: palette.ink500 },
-	disabled: { opacity: 0.6 },
-	error: { ...typography.caption, color: palette.danger600, textAlign: "center" },
+	help: { ...typography.caption, color: palette.ink500, textAlign: "center" },
 });

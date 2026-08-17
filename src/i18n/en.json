@@ -18,9 +18,7 @@
   "auth": {
     "welcomeTitle": "Learn through traditional games",
     "welcomeBody": "Congklak and Benteng, with skills you can actually measure.",
-    "signInEmail": "Sign in with email",
-    "signInGoogle": "Sign in with Google",
-    "joinWithCode": "Have a class code?",
+    "joinWithCode": "Join with a class code",
     "codeLabel": "Class code",
     "codePlaceholder": "6 letters from your teacher",
     "codeInvalid": "That class code is not valid",
@@ -36,7 +34,8 @@
     "signOutWarningTitle": "Sign out now?",
     "signOutWarningPending": "{{count}} results have not been sent yet. They stay on this phone and will send when you sign in again.",
     "recognizeYourself": "Find your profile",
-    "recognizeHelp": "If you have used this class before, pick your profile. Your teacher approves it."
+    "recognizeHelp": "If you have used this class before, pick your profile. Your teacher approves it.",
+    "codeFromTeacher": "Your teacher has the code for your class."
   },
   "home": {
     "greeting": "Hello, {{name}}",
@@ -267,8 +266,12 @@
     "deleteAccountBody": "This removes your account and everything you have done. It takes effect in 30 days, and you can cancel before then.",
     "deleteScheduledTitle": "Deletion scheduled",
     "deleteScheduledBody": "Your account will be deleted in 30 days. Tell your teacher if you change your mind.",
-    "addEmail": "Add an email",
-    "addEmailBody": "With an email you can sign in again if this phone is gone, and your certificate has somewhere to be issued. Your progress stays exactly as it is."
+    "connectWallet": "Connect a wallet",
+    "connectWalletBody": "Optional. If you already use a wallet app, connecting it lets you sign in again from another phone. Your progress and certificates stay exactly as they are either way.",
+    "connectWalletConfirm": "You will be sent to your wallet app to approve this.",
+    "walletConnected": "Wallet connected",
+    "walletConnectedBody": "You can now sign in from another phone with this wallet.",
+    "walletInUse": "That wallet already belongs to another account. Sign in with it instead."
   },
   "sync": {
     "pendingCount": "{{count}} waiting to send",

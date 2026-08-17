@@ -9,14 +9,19 @@
  * inside a `useEffect` in a tab screen, so authentication is a side effect of
  * looking at your profile, and the other four tabs render regardless.
  *
- * It also replaces `ConnectButton` and its eight external wallets. Asking a
- * rural student to install MetaMask before they can play a Congklak mission is
- * the single largest access barrier the demo has, and it exists to serve a
- * feature — token rewards — that is blocked pending review anyway.
+ * **There is one way in: a class code.** The email and Google paths are gone
+ * along with the in-app wallet that backed them. Both asked a student to have
+ * an inbox, which the students this is built for often do not, and both put a
+ * third party on the critical path of a lesson starting.
+ *
+ * A wallet is still reachable, from the profile screen, using a wallet the
+ * person already controls. It is optional in the strict sense: nothing in the
+ * product needs it, certificates included — those are meaningful off-chain from
+ * the day they are issued (ADR-009).
  */
 
 import { signLoginPayload, type LoginPayload } from 'thirdweb/auth';
-import { inAppWallet } from 'thirdweb/wallets';
+import { createWallet, type Wallet } from 'thirdweb/wallets';
 
 import { config } from '../../lib/config';
 import { thirdwebClient } from '../../lib/thirdweb';
@@ -25,7 +30,16 @@ import { rpc } from '../../data/nakama/rpc';
 import { newItemId } from '../../data/outbox/queue';
 import { deviceId, setActiveAccount } from '../../data/cache/storage';
 
-export type SignInStrategy = 'email' | 'google';
+/**
+ * Wallets somebody might already have.
+ *
+ * External only. An in-app wallet would have to be unlocked by something, and
+ * the only something on offer is an email code — which is the dependency this
+ * whole change exists to remove.
+ */
+export const EXTERNAL_WALLETS = ['io.metamask', 'com.coinbase.wallet', 'me.rainbow'] as const;
+
+export type ExternalWalletId = (typeof EXTERNAL_WALLETS)[number];
 
 export class AuthError extends Error {
   readonly reason:
@@ -104,8 +118,7 @@ async function postToVerifier<T>(path: string, body: unknown): Promise<T> {
  */
 async function fetchAssertion(
   account: { address: string },
-  wallet: ReturnType<typeof inAppWallet>,
-  strategy: SignInStrategy,
+  wallet: Wallet,
 ): Promise<AssertionResponse> {
   const { payload } = await postToVerifier<{ payload: LoginPayload }>('/session/challenge', {
     address: account.address,
@@ -119,65 +132,7 @@ async function fetchAssertion(
   return postToVerifier<AssertionResponse>('/session', {
     payload: signed.payload,
     signature: signed.signature,
-    strategy,
-  });
-}
-
-/**
- * Sign in with an in-app wallet.
- *
- * The student sees an email code or a Google sheet. They never see a wallet,
- * a seed phrase, or the word "crypto" — the address exists so an R3 certificate
- * has somewhere to live, and that is the only reason.
- */
-export async function signIn(strategy: SignInStrategy, email?: string): Promise<string> {
-  const wallet = inAppWallet();
-
-  let account: { address: string };
-  try {
-    account =
-      strategy === 'email'
-        ? await wallet.connect({ client: thirdwebClient, strategy: 'email', email: email ?? '', verificationCode: '' })
-        : await wallet.connect({ client: thirdwebClient, strategy: 'google' });
-  } catch (err) {
-    throw new AuthError('cancelled', (err as Error)?.message ?? 'Sign-in was cancelled');
-  }
-
-  const { assertion, address } = await fetchAssertion(account, wallet, strategy);
-
-  // The address is lower-cased on both sides. An address differing only in
-  // case must not be able to become a second account.
-  const customId = address.toLowerCase();
-
-  let session;
-  try {
-    session = await client.authenticateCustom(customId, true, undefined, {
-      assertion,
-      authStrategy: strategy,
-    });
-  } catch (err) {
-    throw new AuthError('nakama_rejected', (err as Error)?.message ?? 'The server refused the sign-in');
-  }
-
-  const accountId = session.user_id ?? customId;
-  persistSession(accountId, session);
-  setActiveAccount(accountId);
-  return accountId;
-}
-
-/**
- * Send the email verification code.
- *
- * Split from `signIn` because the UI needs two steps and the second one needs
- * the code the student read off their phone.
- */
-export async function sendEmailCode(email: string): Promise<void> {
-  const wallet = inAppWallet();
-  await wallet.connect({
-    client: thirdwebClient,
-    strategy: 'email',
-    email,
-    verificationCode: '',
+    strategy: 'wallet',
   });
 }
 
@@ -303,36 +258,38 @@ export async function requestReclaim(
 }
 
 /**
- * Add an email or Google login to a class-code account (TRD-AUTH-005).
+ * Attach a wallet the person already controls (TRD-AUTH-005).
  *
- * A class-code student has no email and no password, which is what makes the
- * path reachable at all and also what makes it fragile: lose the device and the
- * only recovery is a teacher approving a reclaim. This is how they stop being
- * in that position, and — because it is what creates their wallet — how they
- * become able to hold a certificate.
+ * An account created from a class code has no password and no email, which is
+ * what makes it reachable by a student with neither — and also what makes it
+ * fragile: lose the device and the only recovery is a teacher approving a
+ * reclaim. This is how somebody stops being in that position.
+ *
+ * **Nothing requires it.** Every mission, every lesson, and every certificate
+ * works without one. It is offered, once, in the profile screen, and a student
+ * who never opens it loses nothing.
  *
  * The account is never forked. They are already signed in, so there is nothing
  * to merge: the same account keeps its progress, points, and mastery, and only
- * what they sign in with next time changes.
+ * what they can sign in with next time changes.
  */
 export async function upgradeAccount(
   accountId: string,
-  strategy: SignInStrategy,
-  email?: string,
+  walletId: ExternalWalletId,
 ): Promise<{ walletAddress: string }> {
-  const wallet = inAppWallet();
+  const wallet = createWallet(walletId);
 
   let account: { address: string };
   try {
-    account =
-      strategy === 'email'
-        ? await wallet.connect({ client: thirdwebClient, strategy: 'email', email: email ?? '', verificationCode: '' })
-        : await wallet.connect({ client: thirdwebClient, strategy: 'google' });
+    account = await wallet.connect({ client: thirdwebClient });
   } catch (err) {
-    throw new AuthError('cancelled', (err as Error)?.message ?? 'Sign-in was cancelled');
+    // Includes the ordinary case of somebody opening their wallet app, reading
+    // what is being asked, and deciding not to. That is not an error worth an
+    // alarming message.
+    throw new AuthError('cancelled', (err as Error)?.message ?? 'Connecting was cancelled');
   }
 
-  const { assertion } = await fetchAssertion(account, wallet, strategy);
+  const { assertion } = await fetchAssertion(account, wallet);
 
   // Sent to the server rather than applied locally: the address is claimed by
   // the account that presents proof of it, and only the server can tell whether
