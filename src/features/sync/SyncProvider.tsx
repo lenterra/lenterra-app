@@ -54,5 +54,6 @@ export function useSync(): SyncEngine {
     syncNow: async () => null,
     downloadCatalogNow: async () => null,
     refreshCounts: () => {},
+    pullServerState: async () => {},
   };
 }

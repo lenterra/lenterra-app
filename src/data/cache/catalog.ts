@@ -79,6 +79,40 @@ export function missionsFor(accountId: string, version: string, game: string): M
   return readPart<Mission[]>(accountId, version, `missions.${game}`) ?? [];
 }
 
+/** What a reward is. All three kinds are cosmetic; nothing here changes a game. */
+export interface RewardItem {
+  id: string;
+  cost: number;
+  kind: 'avatar_color' | 'board_skin' | 'title';
+  value: string;
+}
+
+/**
+ * The reward shop, from the catalog already on the device.
+ *
+ * Read locally rather than fetched, so the shop opens with no connection —
+ * which is the normal state for the students who earn the points.
+ *
+ * Sorted by cost. A list ordered by whatever the authoring file happened to
+ * contain would put an 800-point title above a 100-point colour, and the first
+ * thing a student wants to know is what they can afford now.
+ */
+export function rewardCatalog(accountId: string): RewardItem[] {
+  const version = currentCatalogVersion(accountId);
+  if (!version) return [];
+
+  const body = readPart<Record<string, Omit<RewardItem, 'id'>>>(
+    accountId,
+    version,
+    'rewards.catalog',
+  );
+  if (!body) return [];
+
+  return Object.keys(body)
+    .map((id) => ({ id, ...(body[id] as Omit<RewardItem, 'id'>) }))
+    .sort((a, b) => a.cost - b.cost);
+}
+
 /**
  * Find a mission by id, across games.
  *

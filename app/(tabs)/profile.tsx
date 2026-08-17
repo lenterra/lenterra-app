@@ -43,10 +43,12 @@ import { useQueryClient } from '@tanstack/react-query';
 
 import { activeAccountId, signOut } from '@/src/data/cache/storage';
 import { queryKeys } from '@/src/data/queries/client';
+import { RewardShop } from '@/src/features/rewards/RewardShop';
 import {
   useBootstrap,
   useCertificates,
   useFriends,
+  usePoints,
   useProgress,
   type Certificate,
   type CertificateProgress,
@@ -80,8 +82,8 @@ import {
   type DomainName,
 } from '@/src/ui/tokens';
 
-type Tab = 'record' | 'statistics' | 'friends' | 'certificates';
-const TABS: Tab[] = ['record', 'statistics', 'friends', 'certificates'];
+type Tab = 'record' | 'statistics' | 'friends' | 'certificates' | 'rewards';
+const TABS: Tab[] = ['record', 'statistics', 'friends', 'certificates', 'rewards'];
 
 /** Under three days of history, a chart is decoration pretending to be data. */
 const MIN_WEEKS_FOR_CHART = 2;
@@ -188,6 +190,7 @@ export default function ProfileScreen() {
         ) : null}
         {tab === 'friends' ? <FriendsTab accountId={accountId} /> : null}
         {tab === 'certificates' ? <CertificatesTab accountId={accountId} /> : null}
+        {tab === 'rewards' ? <RewardsTab accountId={accountId} /> : null}
 
         <Settings accountId={accountId} />
       </ScrollView>
@@ -663,7 +666,12 @@ function CertificatesTab({ accountId }: { accountId: string | null }) {
   return (
     <View style={styles.section}>
       {earned.map((certificate: Certificate) => (
-        <CertificateCard key={certificate.id} certificate={certificate} />
+        <CertificateCard
+          key={certificate.id}
+          accountId={accountId}
+          certificate={certificate}
+          onChanged={() => void certificates.refetch()}
+        />
       ))}
 
       {earned.length === 0 ? (
@@ -687,9 +695,43 @@ function CertificatesTab({ accountId }: { accountId: string | null }) {
   );
 }
 
-function CertificateCard({ certificate }: { certificate: Certificate }) {
+function CertificateCard({
+  accountId,
+  certificate,
+  onChanged,
+}: {
+  accountId: string | null;
+  certificate: Certificate;
+  onChanged: () => void;
+}) {
   const { t } = useTranslation();
   const issued = new Date(certificate.issuedAt);
+  const [busy, setBusy] = useState(false);
+
+  /**
+   * Whether anybody holding the link can check this certificate.
+   *
+   * The server's own comment says this is the student's decision, and until now
+   * they had no way to make it — the flag was set at issuance and could only be
+   * changed in the database. Which way it defaults matters less than that a
+   * thirteen-year-old can change their mind about who can look them up.
+   */
+  const setVisibility = async (publicVerifiable: boolean) => {
+    if (!accountId) return;
+    setBusy(true);
+    try {
+      await rpc(accountId, 'v1.certificate.visibility', {
+        certificateId: certificate.id,
+        publicVerifiable,
+        idempotencyKey: `cert-visibility-${certificate.id}-${publicVerifiable}`,
+      });
+      onChanged();
+    } catch {
+      Alert.alert(t('error.generic'));
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
     <View style={styles.certificate}>
@@ -718,6 +760,56 @@ function CertificateCard({ certificate }: { certificate: Certificate }) {
       {/* Inert in R1 and labelled as such, rather than a button that
           silently does nothing (20-11). */}
       <Text style={styles.certificateVerify}>{t('certificate.verifySoon')}</Text>
+
+      <Pressable
+        testID={`certificate-visibility-${certificate.id}`}
+        accessibilityRole="switch"
+        accessibilityState={{ checked: certificate.publicVerifiable, disabled: busy }}
+        accessibilityLabel={t('certificate.visibilityLabel')}
+        disabled={busy}
+        style={styles.certificateToggle}
+        onPress={() => void setVisibility(!certificate.publicVerifiable)}
+      >
+        <Text style={styles.certificateToggleLabel}>
+          {certificate.publicVerifiable
+            ? t('certificate.visibilityPublic')
+            : t('certificate.visibilityPrivate')}
+        </Text>
+        <Text style={styles.certificateToggleAction}>
+          {certificate.publicVerifiable
+            ? t('certificate.visibilityMakePrivate')
+            : t('certificate.visibilityMakePublic')}
+        </Text>
+      </Pressable>
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Rewards
+// ---------------------------------------------------------------------------
+
+/**
+ * What points are for.
+ *
+ * Until the catalogue was authored they were for nothing: the balance went up,
+ * the shop RPC existed, and there was no way to spend a single point. A number
+ * that only ever increases and buys nothing teaches a student to ignore it.
+ */
+function RewardsTab({ accountId }: { accountId: string | null }) {
+  const points = usePoints(accountId);
+
+  if (points.isLoading && !points.data) return <LoadingState />;
+  if (points.isError && !points.data) return <ErrorState onRetry={() => points.refetch()} />;
+
+  return (
+    <View style={styles.section}>
+      <RewardShop
+        accountId={accountId}
+        balance={points.data?.balance ?? 0}
+        owned={points.data?.owned ?? []}
+        onRedeemed={() => void points.refetch()}
+      />
     </View>
   );
 }
@@ -788,6 +880,32 @@ function Settings({ accountId }: { accountId: string | null }) {
    * would be pressuring a child toward a crypto app to get something they
    * already have.
    */
+  const deletionScheduledFor = bootstrap.data?.profile.deletionScheduledFor ?? null;
+
+  /**
+   * Take back a deletion request.
+   *
+   * Confirmed like the request was, in the same shape, because a mis-tap in
+   * either direction is the failure this pair of rows exists to prevent.
+   */
+  const cancelDeletion = () => {
+    Alert.alert(t('profile.cancelDeletion'), t('profile.cancelDeletionBody'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('common.continue'),
+        onPress: () => {
+          if (!accountId) return;
+          void rpc(accountId, 'v1.account.delete.cancel', {})
+            .then(() => {
+              void bootstrap.refetch();
+              Alert.alert(t('profile.cancelDeletionDoneTitle'), t('profile.cancelDeletionDoneBody'));
+            })
+            .catch(() => Alert.alert(t('error.generic')));
+        },
+      },
+    ]);
+  };
+
   const startUpgrade = () => {
     Alert.alert(t('profile.connectWallet'), t('profile.connectWalletBody'), [
       { text: t('common.cancel'), style: 'cancel' },
@@ -807,7 +925,27 @@ function Settings({ accountId }: { accountId: string | null }) {
         <Row testID="profile-connect-wallet" label={t('profile.connectWallet')} onPress={startUpgrade} />
       ) : null}
       <Row label={t('profile.signOut')} onPress={confirmSignOut} />
-      <Row label={t('profile.deleteAccount')} onPress={requestDeletion} danger />
+
+      {/*
+        A deletion already requested, and the way out of it.
+        Thirty days to change your mind is only a real promise if changing it
+        is possible from the screen — a student who taps this on a borrowed
+        phone and thinks better of it an hour later had, until now, no way
+        back. The row replaces the request row rather than sitting beside it,
+        because asking twice is not the action that is available.
+      */}
+      {deletionScheduledFor ? (
+        <Row
+          testID="profile-cancel-deletion"
+          label={t('profile.cancelDeletion')}
+          value={t('profile.deletionScheduled', {
+            date: new Date(deletionScheduledFor).toLocaleDateString(),
+          })}
+          onPress={cancelDeletion}
+        />
+      ) : (
+        <Row label={t('profile.deleteAccount')} onPress={requestDeletion} danger />
+      )}
     </View>
   );
 }
@@ -984,6 +1122,14 @@ const styles = StyleSheet.create({
   certificateDate: { ...typography.caption, color: palette.ink500 },
   certificateEvidence: { ...typography.body, color: palette.ink700, marginTop: spacing.sm },
   certificateDisclaimer: { ...typography.caption, color: palette.ink500, fontStyle: 'italic' },
+  certificateToggle: {
+    minHeight: MIN_TOUCH_TARGET,
+    justifyContent: 'center',
+    gap: spacing.xs,
+    paddingTop: spacing.sm,
+  },
+  certificateToggleLabel: { ...typography.caption, color: palette.ink500 },
+  certificateToggleAction: { ...typography.label, color: palette.blue700 },
   certificateVerify: { ...typography.caption, color: palette.ink500 },
 
   settingRow: {

@@ -22,7 +22,9 @@ import {
 } from '../../data/cache/catalogSync';
 import { drain, type DrainOutcome } from '../../data/outbox/drain';
 import { oldestPendingAt, pendingCount, permanentFailures } from '../../data/outbox/queue';
+import { storeAssignments, type Assignment } from '../../data/cache/assignments';
 import { queryKeys } from '../../data/queries/client';
+import { rpc } from '../../data/nakama/rpc';
 import { isOnline, onConnectivityChange, refreshConnectivity } from '../../lib/net';
 import type { OutboxItem } from '../../data/outbox/types';
 
@@ -114,6 +116,35 @@ export function useSyncEngine(accountId: string | null) {
     [accountId, queryClient],
   );
 
+  /**
+   * Pull what the server has for this student.
+   *
+   * Assignments are the reason this exists: `v1.sync.pull` is the only channel
+   * that carries one to a device, and until now nothing called it, so the whole
+   * assignment feature was complete on the server and invisible here.
+   *
+   * Failures are swallowed on purpose. This runs on every reconnect and every
+   * foreground, and a student who has no teacher assignment — most of them,
+   * most of the time — must never see an error because a background pull did
+   * not land.
+   */
+  const pullServerState = useCallback(async (): Promise<void> => {
+    if (!accountId || !isOnline()) return;
+
+    try {
+      const result = await rpc<{ changes?: { assignments?: Assignment[] } }>(
+        accountId,
+        'v1.sync.pull',
+        { cursor: null },
+      );
+      storeAssignments(accountId, result.changes?.assignments ?? [], Date.now());
+      void queryClient.invalidateQueries({ queryKey: queryKeys.assignments(accountId) });
+    } catch {
+      // Keep whatever was pulled last. A stale assignment list is far better
+      // than an empty one, which reads as "your teacher has assigned nothing".
+    }
+  }, [accountId, queryClient]);
+
   const run = useCallback(
     async (reason: string): Promise<DrainOutcome | null> => {
       if (!accountId || inFlight.current) return null;
@@ -155,9 +186,10 @@ export function useSyncEngine(accountId: string | null) {
       if (next.online) {
         void run('reconnect');
         void pullCatalog();
+        void pullServerState();
       }
     });
-  }, [run, pullCatalog]);
+  }, [run, pullCatalog, pullServerState]);
 
   // --- trigger: foreground ------------------------------------------------
   useEffect(() => {
@@ -166,11 +198,12 @@ export function useSyncEngine(accountId: string | null) {
       void refreshConnectivity().then(() => {
         void run('foreground');
         void pullCatalog();
+        void pullServerState();
       });
     };
     const subscription = AppState.addEventListener('change', handler);
     return () => subscription.remove();
-  }, [run, pullCatalog]);
+  }, [run, pullCatalog, pullServerState]);
 
   // --- trigger: timer -----------------------------------------------------
   useEffect(() => {
@@ -186,7 +219,11 @@ export function useSyncEngine(accountId: string | null) {
     // catalog version it was played against, and pushing it before the version
     // moves keeps that pairing obvious on both sides.
     void pullCatalog();
-  }, [refreshCounts, run, pullCatalog]);
+    // Last, and after the drain: an assignment list pulled before this
+    // student's own work has been pushed would be a picture of the server
+    // before it knew what they had done.
+    void pullServerState();
+  }, [refreshCounts, run, pullCatalog, pullServerState]);
 
   return {
     ...state,
@@ -195,5 +232,6 @@ export function useSyncEngine(accountId: string | null) {
     /** "Download now" on a deferred update — the student overriding the budget. */
     downloadCatalogNow: () => pullCatalog(true),
     refreshCounts,
+    pullServerState,
   };
 }

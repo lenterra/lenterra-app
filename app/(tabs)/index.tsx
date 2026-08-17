@@ -32,7 +32,10 @@ import { useTranslation } from 'react-i18next';
 
 import { activeAccountId } from '@/src/data/cache/storage';
 import { lessonCovering } from '@/src/data/cache/courses';
+import { findMission } from '@/src/data/cache/catalog';
+import { AssignmentCards } from '@/src/features/assignments/AssignmentCards';
 import {
+	useAssignments,
 	useBootstrap,
 	useRecommendations,
 	type Recommendation,
@@ -53,6 +56,26 @@ import {
 	typography,
 } from '@/src/ui/tokens';
 
+/**
+ * The mission's name, from the catalog on this device.
+ *
+ * A recommendation carries an id, not a title — titles are content and live in
+ * the catalog, which is how they get translated and corrected without an app
+ * release. Rendering the id was showing `congklak.m04` to a thirteen-year-old
+ * as the name of the thing they were being asked to play.
+ *
+ * Falls back to the id only when the catalog has not synced yet, which is a
+ * state a first-run student can genuinely be in.
+ */
+function missionTitle(
+	accountId: string | null,
+	missionId: string,
+	t: (key: string) => string,
+): string {
+	const found = accountId ? findMission(accountId, missionId) : null;
+	return found ? t(found.mission.titleKey) : missionId;
+}
+
 /** `algo.iteration` → `algorithms`, so a node maps to its domain colour. */
 function domainOf(skillNodeId: string): keyof typeof domainColors {
 	if (skillNodeId.startsWith('comp.')) return 'computation';
@@ -67,6 +90,7 @@ export default function HomeScreen() {
 
 	const bootstrap = useBootstrap(accountId);
 	const recommendations = useRecommendations(accountId);
+	const assignments = useAssignments(accountId);
 	const pending = accountId ? pendingCount(accountId) : 0;
 
 	const openMission = useCallback(
@@ -80,7 +104,6 @@ export default function HomeScreen() {
 
 	const primary = recommendations.data?.primary ?? null;
 	const alternatives: Recommendation[] = recommendations.data?.alternatives ?? [];
-	const assignment = recommendations.data?.assignment ?? null;
 	const summary = bootstrap.data?.summary;
 
 	// The engine marks a recommendation `recovery` when the student is
@@ -149,23 +172,19 @@ export default function HomeScreen() {
 				{/*
 					A teacher's assignment outranks the engine's pick. The engine
 					makes a recommendation; a teacher has made a decision.
+
+					Read from the local cache rather than the recommendation
+					response, so an assignment is still there on the bus home —
+					which is when a student has time to read one.
 				*/}
-				{assignment ? (
-					<Pressable
-						accessibilityRole="button"
-						style={styles.assignmentCard}
-						onPress={() =>
-							// A teacher may assign either. Sending a lesson id to the
-							// mission player opens a board that does not exist.
-							assignment.kind === 'lesson'
-								? openLesson(assignment.targetId)
-								: openMission(assignment.targetId)
-						}
-					>
-						<Text style={styles.assignmentLabel}>{t('home.assignmentFromTeacher')}</Text>
-						<Text style={styles.assignmentTarget}>{assignment.targetId}</Text>
-						{assignment.note ? <Text style={styles.assignmentNote}>{assignment.note}</Text> : null}
-					</Pressable>
+				{accountId ? (
+					<AssignmentCards
+						accountId={accountId}
+						assignments={assignments.data ?? []}
+						onOpenMission={openMission}
+						onOpenLesson={openLesson}
+						onDismissed={() => void assignments.refetch()}
+					/>
 				) : null}
 
 				{/*
@@ -199,13 +218,13 @@ export default function HomeScreen() {
 					<>
 						<Pressable
 							accessibilityRole="button"
-							accessibilityLabel={`${primary.missionId}. ${t(primary.displayReasonKey)}`}
+							accessibilityLabel={`${missionTitle(accountId, primary.missionId, t)}. ${t(primary.displayReasonKey)}`}
 							testID="recommendation-primary"
 							style={styles.primaryCard}
 							onPress={() => openMission(primary.missionId)}
 						>
 							<View style={styles.primaryTop}>
-								<Text style={styles.primaryTitle}>{primary.missionId}</Text>
+								<Text style={styles.primaryTitle}>{missionTitle(accountId, primary.missionId, t)}</Text>
 								<DomainTag node={primary.primarySkillNodeId} />
 							</View>
 							{/*
@@ -228,7 +247,7 @@ export default function HomeScreen() {
 								onPress={() => openMission(item.missionId)}
 							>
 								<View style={styles.altInfo}>
-									<Text style={styles.altTitle}>{item.missionId}</Text>
+									<Text style={styles.altTitle}>{missionTitle(accountId, item.missionId, t)}</Text>
 									<Text style={styles.altReason}>{t(item.displayReasonKey)}</Text>
 								</View>
 								<DomainTag node={item.primarySkillNodeId} />

@@ -53,7 +53,11 @@
     "points": "{{count}} points",
     "emptyTitle": "Nothing here yet",
     "emptyBody": "Play one mission to see your progress.",
-    "tryALesson": "Try the lesson first"
+    "tryALesson": "Try the lesson first",
+    "assignmentHide": "Hide",
+    "assignmentAccessible": "Assigned by your teacher: {{title}}",
+    "assignmentUnknownLesson": "A lesson your teacher chose",
+    "assignmentUnknownMission": "A mission your teacher chose"
   },
   "games": {
     "title": "Games",
@@ -236,7 +240,8 @@
       "record": "Record",
       "statistics": "Statistics",
       "friends": "Friends",
-      "certificates": "Certificates"
+      "certificates": "Certificates",
+      "rewards": "Rewards"
     },
     "class": "Class",
     "requests": "Friend requests",
@@ -271,7 +276,12 @@
     "connectWalletConfirm": "You will be sent to your wallet app to approve this.",
     "walletConnected": "Wallet connected",
     "walletConnectedBody": "You can now sign in from another phone with this wallet.",
-    "walletInUse": "That wallet already belongs to another account. Sign in with it instead."
+    "walletInUse": "That wallet already belongs to another account. Sign in with it instead.",
+    "cancelDeletion": "Cancel account deletion",
+    "cancelDeletionBody": "Your account will be kept, exactly as it is now.",
+    "cancelDeletionDoneTitle": "Deletion cancelled",
+    "cancelDeletionDoneBody": "Nothing will be deleted. Everything is where you left it.",
+    "deletionScheduled": "Scheduled for {{date}}"
   },
   "sync": {
     "pendingCount": "{{count}} waiting to send",
@@ -319,7 +329,12 @@
           "title": "Defence and Response"
         }
       }
-    }
+    },
+    "visibilityLabel": "Who can check this certificate",
+    "visibilityPublic": "Anyone with the link can check this.",
+    "visibilityPrivate": "Only you and your teacher can see this.",
+    "visibilityMakePublic": "Let anyone check it",
+    "visibilityMakePrivate": "Keep it private"
   },
   "skill": {
     "comp": {
@@ -344,6 +359,20 @@
       "defense": "Defending a position",
       "risk": "Weighing risk",
       "response": "Responding to an attack"
+    }
+  },
+  "rewards": {
+    "balance": "You have {{points}} points",
+    "cost": "{{points}} pts",
+    "owned": "Yours",
+    "buyAccessible": "Get {{name}} for {{points}} points",
+    "cannotAfford": "Not enough points yet, or you already have it.",
+    "emptyTitle": "Nothing to show yet",
+    "emptyBody": "The rewards list arrives with your next content download.",
+    "kind": {
+      "avatar_color": "Profile colour",
+      "board_skin": "Board look",
+      "title": "Title under your name"
     }
   }
 }

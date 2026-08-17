@@ -96,5 +96,8 @@ export const queryKeys = {
   classGoal: (accountId: string) => ['class-goal', accountId] as const,
   points: (accountId: string) => ['points', accountId] as const,
   certificates: (accountId: string) => ['certificates', accountId] as const,
+  /** Read from the local cache, not the network — see `data/cache/assignments`. */
+  assignments: (accountId: string) => ['assignments', accountId] as const,
+  rewards: (accountId: string) => ['rewards', accountId] as const,
   friends: (accountId: string) => ['friends', accountId] as const,
 } as const;

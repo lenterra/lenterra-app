@@ -36,6 +36,14 @@ export const ACCOUNT_KEYS = {
   settings: 'settings',
   queryCache: 'query-cache',
   lastSyncAt: 'last-sync-at',
+  /**
+   * What a teacher has assigned, as of the last pull.
+   *
+   * Cached rather than fetched on demand because it has to be readable on the
+   * bus home. A student who is told what to do next only while they have signal
+   * is being told at the one moment they cannot act on it.
+   */
+  assignments: 'assignments',
 } as const;
 
 export function rootStorage(): MMKV {

@@ -15,6 +15,8 @@ import { z } from 'zod';
 
 import { rpc } from '../nakama/rpc';
 import { listFriends } from '../nakama/friends';
+import { activeAssignments } from '../cache/assignments';
+import { rewardCatalog } from '../cache/catalog';
 import { config } from '../../lib/config';
 import { queryKeys } from './client';
 
@@ -34,8 +36,10 @@ const BootstrapSchema = z.object({
     schoolId: z.string().nullable(),
     onboarded: z.boolean(),
     authStrategy: z.string(),
-    /** False for a class-code account that has not added an email yet. */
+    /** False for a code-created account that has not attached a wallet. */
     hasWallet: z.boolean(),
+    /** Set while a deletion request is outstanding, so it can be cancelled. */
+    deletionScheduledFor: z.string().nullable().default(null),
   }),
   class: z
     .object({ id: z.string(), name: z.string(), leaderboardEnabled: z.boolean() })
@@ -166,6 +170,8 @@ export function useClassGoal(accountId: string | null) {
 const PointsSchema = z.object({
   balance: z.number(),
   entries: z.array(z.object({ delta: z.number(), reasonKey: z.string(), at: z.string() })),
+  /** Reward ids already redeemed, so the shop does not offer them twice. */
+  owned: z.array(z.string()).default([]),
   cursor: z.string().nullable(),
 });
 
@@ -286,5 +292,39 @@ export function usePoints(accountId: string | null) {
     enabled: accountId !== null,
     queryFn: () =>
       rpc(accountId as string, 'v1.points.history', { limit: 50 }, { schema: PointsSchema }),
+  });
+}
+
+/**
+ * What a teacher has assigned.
+ *
+ * Reads the local cache rather than the network. The sync engine refills it on
+ * every reconnect, and a student reading this on the bus — which is when they
+ * would read it — has no connection to fetch from.
+ */
+export function useAssignments(accountId: string | null) {
+  return useQuery({
+    queryKey: queryKeys.assignments(accountId ?? 'none'),
+    enabled: accountId !== null,
+    queryFn: () => Promise.resolve(activeAssignments(accountId as string)),
+    // Never considered stale on its own: the cache is authoritative until a
+    // pull replaces it, and a refetch here would only re-read the same file.
+    staleTime: Infinity,
+  });
+}
+
+/**
+ * The reward shop.
+ *
+ * The catalogue is a catalog part like missions and lessons, so it is already
+ * on the device after the first sync. Reading it locally means the shop opens
+ * offline, which matters because points are mostly earned offline too.
+ */
+export function useRewards(accountId: string | null) {
+  return useQuery({
+    queryKey: queryKeys.rewards(accountId ?? 'none'),
+    enabled: accountId !== null,
+    queryFn: () => Promise.resolve(rewardCatalog(accountId as string)),
+    staleTime: Infinity,
   });
 }

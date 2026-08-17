@@ -53,7 +53,11 @@
     "points": "{{count}} poin",
     "emptyTitle": "Belum ada apa-apa di sini",
     "emptyBody": "Mulai satu misi untuk melihat kemajuanmu.",
-    "tryALesson": "Coba baca pelajarannya dulu"
+    "tryALesson": "Coba baca pelajarannya dulu",
+    "assignmentHide": "Sembunyikan",
+    "assignmentAccessible": "Ditugaskan gurumu: {{title}}",
+    "assignmentUnknownLesson": "Pelajaran pilihan gurumu",
+    "assignmentUnknownMission": "Misi pilihan gurumu"
   },
   "games": {
     "title": "Permainan",
@@ -233,10 +237,11 @@
     "dataSaver": "Hemat kuota",
     "dataSaverHelp": "Hanya unduh materi saat terhubung Wi-Fi",
     "tab": {
-      "record": "Rekam Jejak",
+      "record": "Catatan",
       "statistics": "Statistik",
       "friends": "Teman",
-      "certificates": "Sertifikat"
+      "certificates": "Sertifikat",
+      "rewards": "Hadiah"
     },
     "class": "Kelas",
     "requests": "Permintaan teman",
@@ -271,7 +276,12 @@
     "connectWalletConfirm": "Kamu akan diarahkan ke aplikasi dompetmu untuk menyetujui.",
     "walletConnected": "Dompet terhubung",
     "walletConnectedBody": "Sekarang kamu bisa masuk dari HP lain dengan dompet ini.",
-    "walletInUse": "Dompet itu sudah dipakai akun lain. Masuk dengan dompet itu saja."
+    "walletInUse": "Dompet itu sudah dipakai akun lain. Masuk dengan dompet itu saja.",
+    "cancelDeletion": "Batalkan penghapusan akun",
+    "cancelDeletionBody": "Akunmu akan tetap ada, persis seperti sekarang.",
+    "cancelDeletionDoneTitle": "Penghapusan dibatalkan",
+    "cancelDeletionDoneBody": "Tidak ada yang dihapus. Semuanya masih di tempatnya.",
+    "deletionScheduled": "Dijadwalkan {{date}}"
   },
   "sync": {
     "pendingCount": "{{count}} menunggu terkirim",
@@ -319,7 +329,12 @@
           "title": "Pertahanan dan Respons"
         }
       }
-    }
+    },
+    "visibilityLabel": "Siapa yang boleh memeriksa sertifikat ini",
+    "visibilityPublic": "Siapa pun yang punya tautannya bisa memeriksa ini.",
+    "visibilityPrivate": "Hanya kamu dan gurumu yang bisa melihat ini.",
+    "visibilityMakePublic": "Izinkan siapa pun memeriksa",
+    "visibilityMakePrivate": "Simpan untuk diri sendiri"
   },
   "skill": {
     "comp": {
@@ -344,6 +359,20 @@
       "defense": "Menjaga posisi",
       "risk": "Menimbang risiko",
       "response": "Menanggapi serangan"
+    }
+  },
+  "rewards": {
+    "balance": "Poinmu {{points}}",
+    "cost": "{{points}} poin",
+    "owned": "Sudah punya",
+    "buyAccessible": "Ambil {{name}} seharga {{points}} poin",
+    "cannotAfford": "Poinmu belum cukup, atau kamu sudah punya ini.",
+    "emptyTitle": "Belum ada yang bisa ditampilkan",
+    "emptyBody": "Daftar hadiah ikut terunduh bersama materi berikutnya.",
+    "kind": {
+      "avatar_color": "Warna profil",
+      "board_skin": "Tampilan papan",
+      "title": "Gelar di bawah namamu"
     }
   }
 }
