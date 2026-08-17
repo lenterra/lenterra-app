@@ -17,7 +17,7 @@
  * dark pattern rehearsal.
  */
 
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useRouter } from 'expo-router';
 import {
 	Pressable,
@@ -31,6 +31,7 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import { activeAccountId } from '@/src/data/cache/storage';
+import { lessonCovering } from '@/src/data/cache/courses';
 import {
 	useBootstrap,
 	useRecommendations,
@@ -72,11 +73,24 @@ export default function HomeScreen() {
 		(missionId: string) => router.push(`/play/${missionId}`),
 		[router],
 	);
+	const openLesson = useCallback(
+		(lessonId: string) => router.push(`/lesson/${lessonId}`),
+		[router],
+	);
 
 	const primary = recommendations.data?.primary ?? null;
 	const alternatives: Recommendation[] = recommendations.data?.alternatives ?? [];
 	const assignment = recommendations.data?.assignment ?? null;
 	const summary = bootstrap.data?.summary;
+
+	// The engine marks a recommendation `recovery` when the student is
+	// struggling on a node. That is the moment a five-minute lesson is worth
+	// more than another attempt, so the lesson covering the node is offered
+	// alongside it — from the cache, so the offer survives being offline.
+	const recovery = useMemo(() => {
+		if (!accountId || !primary || primary.reason !== 'recovery') return null;
+		return lessonCovering(accountId, primary.primarySkillNodeId);
+	}, [accountId, primary]);
 
 	if (bootstrap.isLoading && !bootstrap.data) {
 		return (
@@ -140,11 +154,38 @@ export default function HomeScreen() {
 					<Pressable
 						accessibilityRole="button"
 						style={styles.assignmentCard}
-						onPress={() => openMission(assignment.targetId)}
+						onPress={() =>
+							// A teacher may assign either. Sending a lesson id to the
+							// mission player opens a board that does not exist.
+							assignment.kind === 'lesson'
+								? openLesson(assignment.targetId)
+								: openMission(assignment.targetId)
+						}
 					>
 						<Text style={styles.assignmentLabel}>{t('home.assignmentFromTeacher')}</Text>
 						<Text style={styles.assignmentTarget}>{assignment.targetId}</Text>
 						{assignment.note ? <Text style={styles.assignmentNote}>{assignment.note}</Text> : null}
+					</Pressable>
+				) : null}
+
+				{/*
+					A student who has failed the same node repeatedly is offered the
+					lesson covering it, not a fourth attempt at the mission that has
+					already beaten them three times (PRD-CRS-006, PRD-ADPT-006). It
+					opens on the lesson itself rather than the course index — the
+					point is to answer the question they are stuck on.
+				*/}
+				{recovery ? (
+					<Pressable
+						accessibilityRole="button"
+						style={styles.recoveryCard}
+						onPress={() => openLesson(recovery.id)}
+					>
+						<Text style={styles.recoveryLabel}>{t('home.tryALesson')}</Text>
+						<Text style={styles.assignmentTarget}>{t(recovery.titleKey)}</Text>
+						<Text style={styles.assignmentNote}>
+							{t('courses.readingTime', { minutes: recovery.readingMinutes })}
+						</Text>
 					</Pressable>
 				) : null}
 
@@ -235,6 +276,14 @@ const styles = StyleSheet.create({
 
 	sectionTitle: { ...typography.heading, color: palette.ink900 },
 
+	recoveryCard: {
+		backgroundColor: palette.warning100,
+		borderRadius: radius.lg,
+		padding: spacing.lg,
+		gap: spacing.xs,
+		minHeight: MIN_TOUCH_TARGET,
+	},
+	recoveryLabel: { ...typography.caption, color: palette.warning600, fontWeight: '700' },
 	assignmentCard: {
 		backgroundColor: palette.orange100,
 		borderRadius: radius.lg,

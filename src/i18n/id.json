@@ -53,7 +53,8 @@
     "streak": "{{count}} hari berturut-turut",
     "points": "{{count}} poin",
     "emptyTitle": "Belum ada apa-apa di sini",
-    "emptyBody": "Mulai satu misi untuk melihat kemajuanmu."
+    "emptyBody": "Mulai satu misi untuk melihat kemajuanmu.",
+    "tryALesson": "Coba baca pelajarannya dulu"
   },
   "games": {
     "title": "Permainan",
@@ -181,7 +182,29 @@
     "emptyTitle": "Belum ada pelajaran",
     "emptyBody": "Pelajaran sedang disiapkan. Sementara itu, permainannya melatih kemampuan yang sama.",
     "lessonsOf": "{{done}} dari {{total}} pelajaran",
-    "readingTime": "sekitar {{minutes}} menit"
+    "readingTime": "sekitar {{minutes}} menit",
+    "start": "Mulai baca",
+    "resume": "Lanjutkan",
+    "lessons": "Daftar pelajaran",
+    "lessonDone": "Sudah dibaca",
+    "lessonTodo": "Belum dibaca",
+    "hasCheck": "ada cek pemahaman",
+    "nextLesson": "Pelajaran berikutnya",
+    "backToCourse": "Kembali ke materi",
+    "submitCheck": "Periksa jawabanku",
+    "retryCheck": "Coba lagi",
+    "attempt": "Percobaan ke-{{n}}",
+    "checkScore": "{{correct}} dari {{total}} benar",
+    "itemRight": "Benar",
+    "itemWrong": "Belum tepat",
+    "unsupportedItem": "Soal jenis ini belum bisa ditampilkan di versi aplikasi ini.",
+    "orderPlaced": "Urutan {{n}}: {{text}}. Ketuk untuk melepas.",
+    "orderUnplaced": "{{text}}. Ketuk untuk menempatkan.",
+    "tone": {
+      "tip": "Tips",
+      "warning": "Perhatikan",
+      "culture": "Catatan budaya"
+    }
   },
   "profile": {
     "title": "Profil",

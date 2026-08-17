@@ -34,7 +34,8 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import { activeAccountId } from '@/src/data/cache/storage';
-import { currentCatalogVersion, readPart } from '@/src/data/cache/catalog';
+import { allCourses, type CourseSummary } from '@/src/data/cache/courses';
+import { lessonsCompletedIn } from '@/src/features/courses/progress';
 import { useProgress } from '@/src/data/queries/hooks';
 import { useSync } from '@/src/features/sync/SyncProvider';
 import { EmptyState, LoadingState } from '@/src/ui/components/ScreenState';
@@ -45,17 +46,7 @@ import {
   radius,
   spacing,
   typography,
-  type DomainName,
 } from '@/src/ui/tokens';
-
-/** The catalog's course shape, as published by the content pipeline. */
-interface CourseSummary {
-  id: string;
-  titleKey: string;
-  summaryKey: string;
-  domain: DomainName;
-  lessons: { id: string; titleKey: string; readingMinutes: number }[];
-}
 
 export default function CoursesScreen() {
   const { t } = useTranslation();
@@ -64,20 +55,29 @@ export default function CoursesScreen() {
   const sync = useSync();
   const progress = useProgress(accountId);
 
-  const courses = useMemo<CourseSummary[]>(() => {
-    if (!accountId) return [];
-    const version = currentCatalogVersion(accountId);
-    if (!version) return [];
-    return readPart<CourseSummary[]>(accountId, version, 'courses') ?? [];
-  }, [accountId, sync.catalogProgress]);
+  const courses = useMemo<CourseSummary[]>(
+    () => (accountId ? allCourses(accountId) : []),
+    [accountId, sync.catalogProgress],
+  );
 
   // Lessons completed per course, so a card can show real progress rather
   // than the demo's fixed percentages.
+  //
+  // Reconciled against what the device knows: a student who read three lessons
+  // on a bus has finished three, whether or not the server has heard about it.
+  // Showing the server's count alone would make their morning's work vanish
+  // until the next sync.
   const completed = useMemo(() => {
     const map: Record<string, number> = {};
-    for (const entry of progress.data?.courses ?? []) map[entry.courseId] = entry.lessonsCompleted;
+    if (!accountId) return map;
+    for (const course of courses) {
+      const synced = progress.data?.courses.find(
+        (entry: { courseId: string; lessonsCompleted: number }) => entry.courseId === course.id,
+      );
+      map[course.id] = lessonsCompletedIn(accountId, course.id, synced?.lessonsCompleted);
+    }
     return map;
-  }, [progress.data]);
+  }, [accountId, courses, progress.data]);
 
   if (sync.catalogProgress && courses.length === 0) {
     return (

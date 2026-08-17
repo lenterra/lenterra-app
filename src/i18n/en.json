@@ -53,7 +53,8 @@
     "streak": "{{count}} days in a row",
     "points": "{{count}} points",
     "emptyTitle": "Nothing here yet",
-    "emptyBody": "Play one mission to see your progress."
+    "emptyBody": "Play one mission to see your progress.",
+    "tryALesson": "Try the lesson first"
   },
   "games": {
     "title": "Games",
@@ -181,7 +182,29 @@
     "emptyTitle": "No lessons yet",
     "emptyBody": "Lessons are on their way. In the meantime, the games teach the same skills.",
     "lessonsOf": "{{done}} of {{total}} lessons",
-    "readingTime": "about {{minutes}} min"
+    "readingTime": "about {{minutes}} min",
+    "start": "Start reading",
+    "resume": "Continue",
+    "lessons": "Lessons",
+    "lessonDone": "Read",
+    "lessonTodo": "Not read yet",
+    "hasCheck": "has a check",
+    "nextLesson": "Next lesson",
+    "backToCourse": "Back to the course",
+    "submitCheck": "Check my answers",
+    "retryCheck": "Try again",
+    "attempt": "Attempt {{n}}",
+    "checkScore": "{{correct}} of {{total}} correct",
+    "itemRight": "Correct",
+    "itemWrong": "Not quite",
+    "unsupportedItem": "This kind of question cannot be shown in this version of the app.",
+    "orderPlaced": "Position {{n}}: {{text}}. Tap to remove.",
+    "orderUnplaced": "{{text}}. Tap to place.",
+    "tone": {
+      "tip": "Tip",
+      "warning": "Watch out",
+      "culture": "Culture note"
+    }
   },
   "profile": {
     "title": "Profile",
