@@ -6,14 +6,13 @@
  * data. This moves the decision to app entry, where it can be answered once.
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 
 import { activeAccountId, signOut as clearAccount } from '../../data/cache/storage';
 import { isSessionExpired, loadSession } from '../../data/nakama/client';
 import { pendingCount } from '../../data/outbox/queue';
 
 export type SessionStatus =
-  | 'loading'
   | 'unauthenticated'
   /** Signed in, but has not chosen a name or joined a class yet. */
   | 'needs-onboarding'
@@ -24,36 +23,47 @@ export interface SessionState {
   accountId: string | null;
 }
 
+/**
+ * Who is signed in, read straight from storage.
+ *
+ * Every source here is synchronous — the account id, the stored session and its
+ * expiry all live on the device — so there is no asynchronous step to wait for
+ * and never was. The hook used to start at `loading` and resolve from an
+ * effect, which meant one render of "we do not know yet" over a question
+ * already answered, and a splash screen held for a frame at every cold start.
+ */
+function evaluateSession(onboarded?: boolean): SessionState {
+  const accountId = activeAccountId();
+  if (!accountId) return { status: 'unauthenticated', accountId: null };
+
+  const session = loadSession(accountId);
+  // Only a genuinely expired *refresh* token requires signing in again. A
+  // stale auth token is refreshed silently, and being offline is not a
+  // reason to sign anybody out.
+  if (!session || isSessionExpired(accountId)) {
+    return { status: 'unauthenticated', accountId: null };
+  }
+
+  return { status: onboarded === false ? 'needs-onboarding' : 'ready', accountId };
+}
+
 export function useSession(onboarded?: boolean): SessionState & {
   refresh: () => void;
   signOut: () => { pendingItems: number };
 } {
-  const [state, setState] = useState<SessionState>({ status: 'loading', accountId: null });
+  const [state, setState] = useState<SessionState>(() => evaluateSession(onboarded));
 
-  const evaluate = useCallback(() => {
-    const accountId = activeAccountId();
+  // Re-read when onboarding completes, during render rather than after it.
+  // From an effect this would render the onboarding gate once more before
+  // moving on, which is a student who has just chosen their name seeing the
+  // name screen flash back.
+  const [seenOnboarded, setSeenOnboarded] = useState(onboarded);
+  if (seenOnboarded !== onboarded) {
+    setSeenOnboarded(onboarded);
+    setState(evaluateSession(onboarded));
+  }
 
-    if (!accountId) {
-      setState({ status: 'unauthenticated', accountId: null });
-      return;
-    }
-
-    const session = loadSession(accountId);
-    // Only a genuinely expired *refresh* token requires signing in again. A
-    // stale auth token is refreshed silently, and being offline is not a
-    // reason to sign anybody out.
-    if (!session || isSessionExpired(accountId)) {
-      setState({ status: 'unauthenticated', accountId: null });
-      return;
-    }
-
-    setState({
-      status: onboarded === false ? 'needs-onboarding' : 'ready',
-      accountId,
-    });
-  }, [onboarded]);
-
-  useEffect(evaluate, [evaluate]);
+  const evaluate = useCallback(() => setState(evaluateSession(onboarded)), [onboarded]);
 
   /**
    * Sign out, keeping the outbox.

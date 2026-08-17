@@ -68,13 +68,16 @@ export default function RootLayout() {
 		recoverInflight(session.accountId);
 	}, [queryClient, session.accountId]);
 
+	// The session is resolved on the first render — every source it reads is
+	// synchronous device storage — so the fonts are the only thing left to wait
+	// for.
 	useEffect(() => {
-		if (loaded && session.status !== "loading") {
+		if (loaded) {
 			SplashScreen.hideAsync();
 		}
-	}, [loaded, session.status]);
+	}, [loaded]);
 
-	if (!loaded || session.status === "loading") {
+	if (!loaded) {
 		return null;
 	}
 

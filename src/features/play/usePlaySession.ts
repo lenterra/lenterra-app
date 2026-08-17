@@ -54,6 +54,92 @@ interface ResumeState {
   hintUsed: boolean;
 }
 
+/** Everything opening a mission decides, before any of it reaches React. */
+export interface OpenedSession {
+  recorder: ReplayRecorder<unknown, unknown>;
+  state: unknown;
+  finished: boolean;
+  /**
+   * When the session began, or null for a fresh one.
+   *
+   * Null rather than `Date.now()` because this is computed during render, and
+   * a clock read during render is impure — it makes the same render produce a
+   * different result each time it runs. A resumed session already knows its
+   * start time; a new one is stamped from an effect, before anything that
+   * measures a duration can run.
+   */
+  startedAt: number | null;
+  hintShown: boolean;
+  hintUsed: boolean;
+  /** True when a saved session was picked up rather than a new one begun. */
+  resumed: boolean;
+}
+
+/**
+ * Open a mission: a fresh session, or the saved one replayed back.
+ *
+ * Pure but for reading storage and the clock, and separated from the hook so it
+ * can be tested — which it could not be while it lived inside an effect, and
+ * this is the code that decides whether a student who was interrupted mid-game
+ * gets their board back or starts again.
+ *
+ * **The board is always re-derived from the moves**, never restored from a
+ * serialised position. A stored board is a second source of truth that can
+ * disagree with the rules, and the disagreement would surface as a game that
+ * plays illegally rather than as a load error.
+ *
+ * A saved session that no longer replays cleanly is abandoned at the last move
+ * that worked rather than discarded whole: the student keeps the part of their
+ * game the current rules still accept. That happens after a content update
+ * changes a mission under a save, which is exactly when throwing it all away
+ * would feel arbitrary.
+ */
+export function openSession(
+  engine: GameEngine<unknown, unknown>,
+  mission: Mission,
+  accountId: string,
+): OpenedSession {
+  const recorder = new ReplayRecorder(engine, mission);
+  const saved = readJson<ResumeState>(accountStorage(accountId), ACCOUNT_KEYS.resume);
+
+  const matches =
+    !!saved && saved.missionId === mission.id && saved.contentVersion === mission.contentVersion;
+
+  if (!matches || !saved) {
+    return {
+      recorder,
+      state: recorder.state,
+      finished: recorder.isTerminal(),
+      startedAt: null,
+      hintShown: false,
+      hintUsed: false,
+      resumed: false,
+    };
+  }
+
+  for (const move of saved.moves) {
+    const parsed = engine.parseMove(move.move);
+    if (!parsed) break;
+    try {
+      recorder.play(parsed, move.actor, move.elapsedMs);
+    } catch {
+      break;
+    }
+  }
+
+  return {
+    recorder,
+    state: recorder.state,
+    finished: recorder.isTerminal(),
+    // The original start time, so an interrupted session is not credited with
+    // a duration that begins when the student came back to it.
+    startedAt: saved.startedAt,
+    hintShown: saved.hintShown,
+    hintUsed: saved.hintUsed,
+    resumed: true,
+  };
+}
+
 export interface UsePlaySessionOptions {
   accountId: string;
   mission: Mission;
@@ -71,7 +157,6 @@ export function usePlaySession(options: UsePlaySessionOptions) {
     [mission.game],
   );
 
-  const recorder = useRef<ReplayRecorder<unknown, unknown> | null>(null);
   // Null until the session starts, rather than `useRef(Date.now())`. `useRef`
   // evaluates its argument on every render and discards all but the first, so
   // the old form read the clock dozens of times per mission and threw the
@@ -108,49 +193,71 @@ export function usePlaySession(options: UsePlaySessionOptions) {
   );
 
   // --- start or resume ----------------------------------------------------
+  /**
+   * Opened during render, not from an effect.
+   *
+   * An effect runs after the commit, so the board was mounted empty and then
+   * filled a frame later. For a student resuming a game that is their position
+   * appearing to be lost and then coming back — and on a slow device the gap is
+   * long enough to be read as exactly that.
+   *
+   * The identity is the account and the mission's content version rather than
+   * the mission object, so a parent that rebuilds its props does not restart a
+   * game in progress. The old dependency array included the object itself and
+   * would have.
+   */
+  const sessionKey = `${accountId}:${mission.id}:${mission.contentVersion}`;
+  const [session, setSession] = useState<{ key: string; opened: OpenedSession } | null>(null);
+
+  if (engine && session?.key !== sessionKey) {
+    const opened = openSession(engine, mission, accountId);
+    setSession({ key: sessionKey, opened });
+    setState(opened.state);
+    setFinished(opened.finished);
+    setHintShown(opened.hintShown);
+    setHintUsed(opened.hintUsed);
+    // A new mission inherits nothing from the last one. Leaving these would
+    // show the previous game's rejection over a fresh board.
+    setRejection(null);
+    setLastEvents([]);
+  }
+
+  /**
+   * The recorder, held in state rather than a ref.
+   *
+   * A ref cannot be written during render, and this has to be established
+   * before the first paint or the board mounts empty and fills a frame later —
+   * which, to a student resuming a game, looks like their position was lost and
+   * then came back. State is the only place a value can be both derived during
+   * render and survive to the next one.
+   */
+  const recorder = session?.opened.recorder ?? null;
+
   useEffect(() => {
-    if (!engine) return;
+    // Stamped here rather than during render: reading the clock while
+    // rendering makes the same render produce different results, and this
+    // number is the denominator of a duration the server scores. Every caller
+    // of `startedAtMs` runs from an event or from `finish`, so all of them are
+    // after this.
+    startedAt.current = session?.opened.startedAt ?? Date.now();
 
-    const fresh = new ReplayRecorder(engine, mission);
-    const saved = readJson<ResumeState>(accountStorage(accountId), ACCOUNT_KEYS.resume);
-
-    if (saved && saved.missionId === mission.id && saved.contentVersion === mission.contentVersion) {
-      // Replay the saved moves through the engine rather than restoring a
-      // serialised board. The board is always re-derived — a stored state is a
-      // second source of truth that can disagree with the rules.
-      for (const move of saved.moves) {
-        const parsed = engine.parseMove(move.move);
-        if (!parsed) break;
-        try {
-          fresh.play(parsed, move.actor, move.elapsedMs);
-        } catch {
-          break; // a resume that no longer replays cleanly starts over
-        }
-      }
-      startedAt.current = saved.startedAt;
-      setHintShown(saved.hintShown);
-      setHintUsed(saved.hintUsed);
-    } else {
-      startedAt.current = Date.now();
-    }
-
-    recorder.current = fresh;
-    setState(fresh.state);
-    setFinished(fresh.isTerminal());
-
-    // Freeze the catalog for the duration (TRD-SYNC-011). Content changing
-    // under a mission in progress would leave the student having played one
-    // version and the server validating against another.
+    // Freeze the catalog for the duration. Content changing under a mission in
+    // progress would leave the student having played one version and the
+    // server validating against another.
     const release = holdCatalog();
 
     return () => {
       animator.cancel();
       release();
     };
-  }, [accountId, animator, engine, mission]);
+    // `session` is deliberately absent: it changes identity only when the key
+    // does, and depending on it would re-freeze the catalog on every state
+    // update.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [animator, sessionKey]);
 
   const persistResume = useCallback(() => {
-    const active = recorder.current;
+    const active = recorder;
     if (!active || finished) return;
 
     // Persisted after every move so a killed app loses at most the current
@@ -164,7 +271,7 @@ export function usePlaySession(options: UsePlaySessionOptions) {
       hintShown,
       hintUsed,
     } satisfies ResumeState);
-  }, [accountId, finished, hintShown, hintUsed, mission]);
+  }, [accountId, finished, hintShown, hintUsed, mission, recorder]);
 
   const clearResume = useCallback(() => {
     accountStorage(accountId).delete(ACCOUNT_KEYS.resume);
@@ -172,7 +279,7 @@ export function usePlaySession(options: UsePlaySessionOptions) {
 
   // --- finishing ----------------------------------------------------------
   const finish = useCallback(() => {
-    const active = recorder.current;
+    const active = recorder;
     if (!active || !engine) return;
 
     const replay = active.finish();
@@ -213,12 +320,23 @@ export function usePlaySession(options: UsePlaySessionOptions) {
     clearResume();
     setFinished(true);
     options.onFinished?.({ outcome, replay, durationMs, attemptKey });
-  }, [accountId, catalogVersion, clearResume, engine, hintShown, hintUsed, mission, options, twoPlayer]);
+  }, [
+    accountId,
+    catalogVersion,
+    clearResume,
+    engine,
+    hintShown,
+    hintUsed,
+    mission,
+    options,
+    recorder,
+    twoPlayer,
+  ]);
 
   // --- playing ------------------------------------------------------------
   const play = useCallback(
     (move: unknown): PlayRejection | null => {
-      const active = recorder.current;
+      const active = recorder;
       if (!active || !engine || finished) return null;
 
       const parsed = engine.parseMove(move);
@@ -279,7 +397,7 @@ export function usePlaySession(options: UsePlaySessionOptions) {
 
       return null;
     },
-    [animator, engine, finish, finished, persistResume, twoPlayer],
+    [animator, engine, finish, finished, persistResume, recorder, twoPlayer],
   );
 
   const skipAnimation = useCallback(() => {

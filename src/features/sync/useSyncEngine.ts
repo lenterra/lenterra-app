@@ -44,33 +44,69 @@ export interface SyncState {
   catalogUpdateWaiting: { version: string; bytes: number } | null;
 }
 
-export function useSyncEngine(accountId: string | null) {
-  const queryClient = useQueryClient();
-  const [state, setState] = useState<SyncState>({
-    pending: 0,
-    oldestPendingAt: null,
+/**
+ * What the outbox on disk currently holds.
+ *
+ * Split out so the first render can read it directly rather than starting at
+ * zero and correcting itself from an effect. The difference is one frame in
+ * which a student with three unsynced results is told they have none — brief,
+ * but this is the indicator they check precisely when they are worried about
+ * whether their work was kept.
+ */
+function countsOf(accountId: string | null) {
+  if (!accountId) {
+    return {
+      pending: 0,
+      oldestPendingAt: null,
+      corrections: [] as OutboxItem[],
+      catalogUpdateWaiting: null,
+    };
+  }
+
+  const waiting = deferredUpdate(accountId);
+  return {
+    pending: pendingCount(accountId),
+    oldestPendingAt: oldestPendingAt(accountId),
+    corrections: permanentFailures(accountId),
+    catalogUpdateWaiting: waiting ? { version: waiting.version, bytes: waiting.bytes } : null,
+  };
+}
+
+function initialState(accountId: string | null): SyncState {
+  return {
+    ...countsOf(accountId),
     syncing: false,
     online: isOnline(),
-    corrections: [],
     lastOutcome: null,
     catalogProgress: null,
-    catalogUpdateWaiting: null,
-  });
+  };
+}
+
+export function useSyncEngine(accountId: string | null) {
+  const queryClient = useQueryClient();
+  const [state, setState] = useState<SyncState>(() => initialState(accountId));
+
+  /**
+   * Re-read when the account changes, during render rather than after it.
+   *
+   * This is React's documented way of adjusting state to a changed prop, and
+   * it is used here in place of an effect on purpose: an effect runs *after*
+   * the commit, so the new student would be shown the previous student's
+   * pending count for a frame. On a shared classroom device that is somebody
+   * else's unsynced work appearing under their name.
+   */
+  const [seededFor, setSeededFor] = useState(accountId);
+  if (seededFor !== accountId) {
+    setSeededFor(accountId);
+    setState(initialState(accountId));
+  }
 
   const inFlight = useRef(false);
   const catalogInFlight = useRef(false);
 
   const refreshCounts = useCallback(() => {
     if (!accountId) return;
-    const waiting = deferredUpdate(accountId);
-    setState((previous) => ({
-      ...previous,
-      pending: pendingCount(accountId),
-      oldestPendingAt: oldestPendingAt(accountId),
-      corrections: permanentFailures(accountId),
-      online: isOnline(),
-      catalogUpdateWaiting: waiting ? { version: waiting.version, bytes: waiting.bytes } : null,
-    }));
+    setState((previous) => ({ ...previous, ...countsOf(accountId), online: isOnline() }));
   }, [accountId]);
 
   /**
@@ -213,17 +249,38 @@ export function useSyncEngine(accountId: string | null) {
 
   // --- initial ------------------------------------------------------------
   useEffect(() => {
-    refreshCounts();
-    void run('startup');
-    // Ordered after the drain deliberately: a queued attempt belongs to the
-    // catalog version it was played against, and pushing it before the version
-    // moves keeps that pairing obvious on both sides.
-    void pullCatalog();
-    // Last, and after the drain: an assignment list pulled before this
-    // student's own work has been pushed would be a picture of the server
-    // before it knew what they had done.
-    void pullServerState();
-  }, [refreshCounts, run, pullCatalog, pullServerState]);
+    // No count refresh here: the state was seeded from the outbox on the first
+    // render and is re-seeded during render when the account changes, so
+    // reading it again after the commit would only repeat what is on screen.
+    //
+    // The burst is deferred by a microtask because `run` flips `syncing` to
+    // true before its first await, and doing that in an effect body is a
+    // setState during the commit — a second render before the first has been
+    // painted. Deferring changes nothing a student can observe: all three of
+    // these are network calls that will not answer this frame either way, and
+    // a microtask still resolves before paint. What it does change is that the
+    // startup drain no longer costs a re-render on the slowest devices, which
+    // are the ones that reach it with the most queued.
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (cancelled) return;
+      void run('startup');
+      // Ordered after the drain deliberately: a queued attempt belongs to the
+      // catalog version it was played against, and pushing it before the
+      // version moves keeps that pairing obvious on both sides.
+      void pullCatalog();
+      // Last, and after the drain: an assignment list pulled before this
+      // student's own work has been pushed would be a picture of the server
+      // before it knew what they had done.
+      void pullServerState();
+    });
+
+    // A student who opens the app and signs out inside one frame must not have
+    // a drain start under the account they just left.
+    return () => {
+      cancelled = true;
+    };
+  }, [run, pullCatalog, pullServerState]);
 
   return {
     ...state,
